@@ -7,6 +7,7 @@ export interface Task {
   columnId: string;
   dueDate?: string;
   createdAt: string;
+  boardId: string;
 }
 
 export interface Column {
@@ -14,6 +15,13 @@ export interface Column {
   title: string;
   tasks: Task[];
   color?: string;
+  boardId: string;
+}
+
+export interface Board {
+  id: string;
+  title: string;
+  createdAt: string;
 }
 
 export type ColumnId = "todo" | "inprogress" | "done";

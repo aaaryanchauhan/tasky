@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
-import { Column, Task, ColumnId } from "@/types/task";
+import { Column, Task, ColumnId, Board } from "@/types/task";
 import BoardColumn from "@/components/BoardColumn";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import Header from "@/components/Header";
 import WaveBackground from "@/components/WaveBackground";
+import BoardSelector from "@/components/BoardSelector";
 
-const initialColumns: Column[] = [
+// Helper function to generate initial columns for a board
+const generateInitialColumns = (boardId: string): Column[] => [
   {
     id: "todo",
     title: "To Do",
@@ -19,56 +22,79 @@ const initialColumns: Column[] = [
         completed: false,
         columnId: "todo",
         createdAt: new Date().toISOString(),
-      },
-      {
-        id: uuidv4(),
-        title: "Create project plan",
-        description: "Define timeline, resources and deliverables",
-        completed: false,
-        columnId: "todo",
-        dueDate: new Date(Date.now() + 86400000 * 5).toISOString(),
-        createdAt: new Date().toISOString(),
+        boardId,
       },
     ],
-    color: "bg-secondary"
+    color: "bg-secondary",
+    boardId,
   },
   {
     id: "inprogress",
     title: "In Progress",
-    tasks: [
-      {
-        id: uuidv4(),
-        title: "Design user interface",
-        description: "Create wireframes and mockups",
-        completed: false,
-        columnId: "inprogress",
-        dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-    ],
-    color: "bg-blue-50 dark:bg-blue-950/30"
+    tasks: [],
+    color: "bg-blue-50 dark:bg-blue-950/30",
+    boardId,
   },
   {
     id: "done",
     title: "Done",
-    tasks: [
-      {
-        id: uuidv4(),
-        title: "Initial project setup",
-        description: "Set up repository and development environment",
-        completed: true,
-        columnId: "done",
-        createdAt: new Date().toISOString(),
-      },
-    ],
-    color: "bg-green-50 dark:bg-green-950/30"
+    tasks: [],
+    color: "bg-green-50 dark:bg-green-950/30",
+    boardId,
+  },
+];
+
+// Generate initial boards
+const initialBoards: Board[] = [
+  {
+    id: "main",
+    title: "Main Board",
+    createdAt: new Date().toISOString(),
   },
 ];
 
 const Index = () => {
-  const [columns, setColumns] = useState<Column[]>(initialColumns);
+  const [boards, setBoards] = useState<Board[]>(initialBoards);
+  const [activeBoard, setActiveBoard] = useState<string>(initialBoards[0].id);
+  const [columns, setColumns] = useState<Column[]>(generateInitialColumns(activeBoard));
+  
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+
+  // Update columns when active board changes
+  useEffect(() => {
+    const boardColumns = columns.filter(col => col.boardId === activeBoard);
+    if (boardColumns.length === 0) {
+      // Initialize columns for this board if none exist
+      setColumns(prev => [...prev, ...generateInitialColumns(activeBoard)]);
+    }
+  }, [activeBoard]);
+
+  const handleBoardChange = (boardId: string) => {
+    setActiveBoard(boardId);
+  };
+
+  const handleCreateBoard = (boardName: string) => {
+    const newBoardId = uuidv4();
+    
+    // Create new board
+    const newBoard: Board = {
+      id: newBoardId,
+      title: boardName,
+      createdAt: new Date().toISOString(),
+    };
+    
+    setBoards([...boards, newBoard]);
+    
+    // Create columns for the new board
+    const newColumns = generateInitialColumns(newBoardId);
+    setColumns([...columns, ...newColumns]);
+    
+    // Switch to the new board
+    setActiveBoard(newBoardId);
+    
+    toast.success(`Board "${boardName}" created`);
+  };
 
   const handleAddTask = (columnId: string) => {
     setActiveColumn(columnId);
@@ -85,10 +111,11 @@ const Index = () => {
         columnId: activeColumn,
         dueDate: taskData.dueDate?.toISOString(),
         createdAt: new Date().toISOString(),
+        boardId: activeBoard,
       };
 
       setColumns(columns.map(column => {
-        if (column.id === activeColumn) {
+        if (column.id === activeColumn && column.boardId === activeBoard) {
           return {
             ...column,
             tasks: [...column.tasks, newTask]
@@ -149,13 +176,13 @@ const Index = () => {
 
         // Remove task from source column and add to target column
         return prevColumns.map(column => {
-          if (column.id === sourceColumnId) {
+          if (column.id === sourceColumnId && column.boardId === activeBoard) {
             return {
               ...column,
               tasks: column.tasks.filter(t => t.id !== taskId)
             };
           }
-          if (column.id === targetColumnId && taskToMove) {
+          if (column.id === targetColumnId && column.boardId === activeBoard && taskToMove) {
             return {
               ...column,
               tasks: [...column.tasks, { ...taskToMove, columnId: targetColumnId }]
@@ -203,13 +230,13 @@ const Index = () => {
 
       // Remove task from source column and add to target column
       return prevColumns.map(column => {
-        if (column.id === sourceColumnId) {
+        if (column.id === sourceColumnId && column.boardId === activeBoard) {
           return {
             ...column,
             tasks: column.tasks.filter(t => t.id !== taskId)
           };
         }
-        if (column.id === targetColumnId) {
+        if (column.id === targetColumnId && column.boardId === activeBoard) {
           return {
             ...column,
             tasks: [...column.tasks, taskToMove!]
@@ -220,23 +247,27 @@ const Index = () => {
     });
   };
 
-  const handleCreateBoard = () => {
-    toast.info("This feature will be available soon!");
-  };
+  // Filter columns for the active board
+  const activeBoardColumns = columns.filter(column => column.boardId === activeBoard);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <WaveBackground />
-      <Header onCreateBoard={handleCreateBoard} />
+      <Header onCreateBoard={() => {}} />
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-semibold mb-6">Main Board</h2>
+          <BoardSelector 
+            boards={boards}
+            activeBoard={activeBoard}
+            onBoardChange={handleBoardChange}
+            onCreateBoard={handleCreateBoard}
+          />
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {columns.map((column) => (
+            {activeBoardColumns.map((column) => (
               <BoardColumn
-                key={column.id}
+                key={`${activeBoard}-${column.id}`}
                 id={column.id}
                 title={column.title}
                 tasks={column.tasks}

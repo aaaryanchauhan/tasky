@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "./ThemeProvider";
 
-interface HeaderProps {
-  onCreateBoard: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ onCreateBoard }) => {
+const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -28,9 +24,6 @@ const Header: React.FC<HeaderProps> = ({ onCreateBoard }) => {
           </div>
         </div>
         <div className="flex items-center gap-x-2">
-          <Button onClick={onCreateBoard} variant="default">
-            New Board
-          </Button>
           <Button
             variant="ghost"
             size="icon"
