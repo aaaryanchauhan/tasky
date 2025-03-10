@@ -5,6 +5,7 @@ import { Column, Task, ColumnId } from "@/types/task";
 import BoardColumn from "@/components/BoardColumn";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import Header from "@/components/Header";
+import WaveBackground from "@/components/WaveBackground";
 
 const initialColumns: Column[] = [
   {
@@ -225,6 +226,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <WaveBackground />
       <Header onCreateBoard={handleCreateBoard} />
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">

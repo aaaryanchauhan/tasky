@@ -6,6 +6,7 @@ import TaskCard from "./TaskCard";
 import { Task, ColumnId } from "@/types/task";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTheme } from "./ThemeProvider";
 
 interface BoardColumnProps {
   title: string;
@@ -26,6 +27,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   id,
   color = "bg-secondary"
 }) => {
+  const { theme } = useTheme();
   // Setup drag handlers for the column
   const [isOver, setIsOver] = React.useState(false);
 
@@ -53,11 +55,16 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
     }
   };
 
+  // Determine the color class based on the theme
+  const colorClass = theme === 'dark' && color === 'bg-secondary' 
+    ? 'bg-gray-800/50' 
+    : color;
+
   return (
     <Card 
       className={cn(
-        "board-column min-h-[70vh] flex flex-col border overflow-hidden", 
-        color,
+        "board-column min-h-[70vh] flex flex-col border overflow-hidden transition-colors duration-300", 
+        colorClass,
         isOver && "ring-2 ring-primary ring-inset"
       )}
       onDragOver={handleDragOver}

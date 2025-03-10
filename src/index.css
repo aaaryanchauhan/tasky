@@ -73,7 +73,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 }
 
@@ -100,4 +100,26 @@
 
 .dark .glass-effect {
   background: rgba(17, 24, 39, 0.7);
+}
+
+/* Wave animation */
+@keyframes wave {
+  0% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-25%) translateZ(0) scaleY(0.95);
+  }
+  100% {
+    transform: translateX(-50%) translateZ(0) scaleY(1);
+  }
+}
+
+.wave {
+  animation: wave 15s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.wave-slow {
+  animation: wave 20s ease-in-out infinite;
 }
