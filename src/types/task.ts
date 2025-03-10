@@ -17,3 +17,9 @@ export interface Column {
 }
 
 export type ColumnId = "todo" | "inprogress" | "done";
+
+export interface DragItem {
+  type: string;
+  id: string;
+  columnId: string;
+}

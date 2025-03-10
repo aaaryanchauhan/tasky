@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TaskCard from "./TaskCard";
 import { Task, ColumnId } from "@/types/task";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface BoardColumnProps {
   title: string;
@@ -25,8 +26,44 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   id,
   color = "bg-secondary"
 }) => {
+  // Setup drag handlers for the column
+  const [isOver, setIsOver] = React.useState(false);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsOver(false);
+    
+    const taskId = e.dataTransfer.getData("taskId");
+    const sourceColumnId = e.dataTransfer.getData("sourceColumnId") as ColumnId;
+    
+    if (taskId && sourceColumnId) {
+      if (sourceColumnId !== id) {
+        onMoveTask(taskId, id as ColumnId);
+      }
+    }
+  };
+
   return (
-    <Card className={cn("board-column min-h-[70vh] flex flex-col border overflow-hidden", color)}>
+    <Card 
+      className={cn(
+        "board-column min-h-[70vh] flex flex-col border overflow-hidden", 
+        color,
+        isOver && "ring-2 ring-primary ring-inset"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-medium">{title}</CardTitle>

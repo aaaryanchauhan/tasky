@@ -1,7 +1,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Check, Calendar, MoreHorizontal, ArrowLeft, ArrowRight } from "lucide-react";
+import { Check, Calendar, GripVertical } from "lucide-react";
 import { Task, ColumnId } from "@/types/task";
 
 interface TaskCardProps {
@@ -12,32 +12,32 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onMove, currentColumnId }) => {
-  const handleMoveLeft = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (currentColumnId === "inprogress") {
-      onMove(task.id, "todo");
-    } else if (currentColumnId === "done") {
-      onMove(task.id, "inprogress");
-    }
+  // Setup drag handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData("taskId", task.id);
+    e.dataTransfer.setData("sourceColumnId", currentColumnId);
+    e.dataTransfer.effectAllowed = "move";
+    
+    // Add a slight delay to improve visual feedback
+    setTimeout(() => {
+      e.currentTarget.classList.add("opacity-50");
+    }, 0);
   };
 
-  const handleMoveRight = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (currentColumnId === "todo") {
-      onMove(task.id, "inprogress");
-    } else if (currentColumnId === "inprogress") {
-      onMove(task.id, "done");
-    }
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.classList.remove("opacity-50");
   };
 
   return (
     <div 
       className={cn(
         "task-card bg-white dark:bg-gray-800 rounded-lg border p-3 group animate-slide-in",
-        "hover:border-primary/30 cursor-pointer",
+        "hover:border-primary/30 cursor-grab active:cursor-grabbing",
         "touch-manipulation"
       )}
-      onClick={() => onToggle(task.id)}
+      draggable="true"
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <div className="flex items-start gap-2">
         <button 
@@ -45,6 +45,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onMove, currentColu
             "flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-muted-foreground/30 flex items-center justify-center",
             task.completed ? "bg-primary border-primary" : ""
           )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(task.id);
+          }}
         >
           {task.completed && <Check size={12} className="text-white" />}
         </button>
@@ -72,25 +76,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onMove, currentColu
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {currentColumnId !== "todo" && (
-            <button 
-              onClick={handleMoveLeft}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-              aria-label="Move left"
-            >
-              <ArrowLeft size={14} className="text-muted-foreground" />
-            </button>
-          )}
-          {currentColumnId !== "done" && (
-            <button 
-              onClick={handleMoveRight}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-              aria-label="Move right"
-            >
-              <ArrowRight size={14} className="text-muted-foreground" />
-            </button>
-          )}
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-muted-foreground cursor-grab">
+            <GripVertical size={16} />
+          </span>
         </div>
       </div>
     </div>
