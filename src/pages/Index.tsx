@@ -1,8 +1,7 @@
-
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
-import { Column, Task } from "@/types/task";
+import { Column, Task, ColumnId } from "@/types/task";
 import BoardColumn from "@/components/BoardColumn";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import Header from "@/components/Header";
@@ -167,6 +166,59 @@ const Index = () => {
     }, 300);
   };
 
+  const handleMoveTask = (taskId: string, targetColumnId: ColumnId) => {
+    setColumns(prevColumns => {
+      // Find the task and its current column
+      let taskToMove: Task | null = null;
+      let sourceColumnId: string | null = null;
+
+      // Find the task to move
+      prevColumns.forEach(column => {
+        const task = column.tasks.find(t => t.id === taskId);
+        if (task) {
+          taskToMove = { ...task };
+          sourceColumnId = column.id;
+        }
+      });
+
+      // If task not found or already in the target column, do nothing
+      if (!taskToMove || sourceColumnId === targetColumnId) {
+        return prevColumns;
+      }
+
+      // Update task's completed status based on the target column
+      const newCompletedState = targetColumnId === "done";
+      taskToMove.completed = newCompletedState;
+      taskToMove.columnId = targetColumnId;
+
+      // Show appropriate toast message
+      if (targetColumnId === "inprogress") {
+        toast.info("Task moved to In Progress");
+      } else if (targetColumnId === "done") {
+        toast.success("Task completed and moved to Done");
+      } else if (targetColumnId === "todo") {
+        toast.info("Task moved back to To Do");
+      }
+
+      // Remove task from source column and add to target column
+      return prevColumns.map(column => {
+        if (column.id === sourceColumnId) {
+          return {
+            ...column,
+            tasks: column.tasks.filter(t => t.id !== taskId)
+          };
+        }
+        if (column.id === targetColumnId) {
+          return {
+            ...column,
+            tasks: [...column.tasks, taskToMove!]
+          };
+        }
+        return column;
+      });
+    });
+  };
+
   const handleCreateBoard = () => {
     toast.info("This feature will be available soon!");
   };
@@ -188,6 +240,7 @@ const Index = () => {
                 tasks={column.tasks}
                 onAddTask={handleAddTask}
                 onTaskToggle={handleTaskToggle}
+                onMoveTask={handleMoveTask}
                 color={column.color}
               />
             ))}

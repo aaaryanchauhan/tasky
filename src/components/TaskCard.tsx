@@ -1,15 +1,35 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Check, Calendar, MoreHorizontal } from "lucide-react";
-import { Task } from "@/types/task";
+import { Check, Calendar, MoreHorizontal, ArrowLeft, ArrowRight } from "lucide-react";
+import { Task, ColumnId } from "@/types/task";
 
 interface TaskCardProps {
   task: Task;
   onToggle: (id: string) => void;
+  onMove: (id: string, targetColumnId: ColumnId) => void;
+  currentColumnId: ColumnId;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onMove, currentColumnId }) => {
+  const handleMoveLeft = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentColumnId === "inprogress") {
+      onMove(task.id, "todo");
+    } else if (currentColumnId === "done") {
+      onMove(task.id, "inprogress");
+    }
+  };
+
+  const handleMoveRight = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentColumnId === "todo") {
+      onMove(task.id, "inprogress");
+    } else if (currentColumnId === "inprogress") {
+      onMove(task.id, "done");
+    }
+  };
+
   return (
     <div 
       className={cn(
@@ -52,9 +72,26 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle }) => {
             </div>
           )}
         </div>
-        <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1">
-          <MoreHorizontal size={16} className="text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {currentColumnId !== "todo" && (
+            <button 
+              onClick={handleMoveLeft}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              aria-label="Move left"
+            >
+              <ArrowLeft size={14} className="text-muted-foreground" />
+            </button>
+          )}
+          {currentColumnId !== "done" && (
+            <button 
+              onClick={handleMoveRight}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              aria-label="Move right"
+            >
+              <ArrowRight size={14} className="text-muted-foreground" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

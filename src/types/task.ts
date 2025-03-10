@@ -15,3 +15,5 @@ export interface Column {
   tasks: Task[];
   color?: string;
 }
+
+export type ColumnId = "todo" | "inprogress" | "done";

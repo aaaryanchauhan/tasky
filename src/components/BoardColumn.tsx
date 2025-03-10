@@ -3,7 +3,7 @@ import React from "react";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TaskCard from "./TaskCard";
-import { Task } from "@/types/task";
+import { Task, ColumnId } from "@/types/task";
 import { cn } from "@/lib/utils";
 
 interface BoardColumnProps {
@@ -11,6 +11,7 @@ interface BoardColumnProps {
   tasks: Task[];
   onAddTask: (columnId: string) => void;
   onTaskToggle: (taskId: string) => void;
+  onMoveTask: (taskId: string, targetColumnId: ColumnId) => void;
   id: string;
   color?: string;
 }
@@ -20,6 +21,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   tasks,
   onAddTask,
   onTaskToggle,
+  onMoveTask,
   id,
   color = "bg-secondary"
 }) => {
@@ -36,7 +38,13 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
       <CardContent className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onToggle={onTaskToggle} />
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+              onToggle={onTaskToggle} 
+              onMove={onMoveTask}
+              currentColumnId={id as ColumnId}
+            />
           ))}
         </div>
       </CardContent>
