@@ -8,6 +8,11 @@ import TaskCard from "@/components/TaskCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import MusicPlayer from "@/components/MusicPlayer";
+import { Progress } from "@/components/ui/progress";
 
 interface GeneralBoardProps {
   columns: Column[];
@@ -46,6 +51,11 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
     };
   });
 
+  // Calculate progress percentage
+  const totalTasks = organizedColumns.reduce((total, column) => total + column.tasks.length, 0);
+  const completedTasks = organizedColumns.find(col => col.id === "done")?.tasks.length || 0;
+  const progressPercentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, columnId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -77,7 +87,30 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto mb-6">
-          <h1 className="text-2xl font-bold mb-4">General Board Overview</h1>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="outline" size="sm" className="gap-1">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Boards
+                </Button>
+              </Link>
+              <h1 className="text-2xl font-bold">General Board Overview</h1>
+            </div>
+          </div>
+          
+          <div className="bg-background border rounded-lg p-4 mb-6">
+            <MusicPlayer />
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Progress: {progressPercentage}% Complete</span>
+              <span className="text-sm text-muted-foreground">{completedTasks} of {totalTasks} tasks</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+          </div>
+          
           <p className="text-muted-foreground mb-4">
             This board shows all tasks from all your boards in one place.
           </p>
