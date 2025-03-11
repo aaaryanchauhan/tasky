@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -9,7 +8,6 @@ import Header from "@/components/Header";
 import WaveBackground from "@/components/WaveBackground";
 import BoardSelector from "@/components/BoardSelector";
 
-// Helper function to generate initial columns for a board
 const generateInitialColumns = (boardId: string): Column[] => [
   {
     id: "todo",
@@ -44,7 +42,6 @@ const generateInitialColumns = (boardId: string): Column[] => [
   },
 ];
 
-// Generate initial boards
 const initialBoards: Board[] = [
   {
     id: "main",
@@ -61,11 +58,9 @@ const Index = () => {
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
-  // Update columns when active board changes
   useEffect(() => {
     const boardColumns = columns.filter(col => col.boardId === activeBoard);
     if (boardColumns.length === 0) {
-      // Initialize columns for this board if none exist
       setColumns(prev => [...prev, ...generateInitialColumns(activeBoard)]);
     }
   }, [activeBoard]);
@@ -77,7 +72,6 @@ const Index = () => {
   const handleCreateBoard = (boardName: string) => {
     const newBoardId = uuidv4();
     
-    // Create new board
     const newBoard: Board = {
       id: newBoardId,
       title: boardName,
@@ -86,11 +80,9 @@ const Index = () => {
     
     setBoards([...boards, newBoard]);
     
-    // Create columns for the new board
     const newColumns = generateInitialColumns(newBoardId);
     setColumns([...columns, ...newColumns]);
     
-    // Switch to the new board
     setActiveBoard(newBoardId);
     
     toast.success(`Board "${boardName}" created`);
@@ -134,12 +126,9 @@ const Index = () => {
         if (task.id === taskId) {
           const newCompletedState = !task.completed;
           
-          // Move task to appropriate column if needed
           if (newCompletedState && column.id !== "done") {
-            // Task was completed but not in Done column - will be moved in next step
             toast.success("Task completed and moved to Done");
           } else if (!newCompletedState && column.id === "done") {
-            // Task was uncompleted but in Done column - will be moved in next step
             toast.info("Task reopened and moved to To Do");
           }
           
@@ -151,14 +140,12 @@ const Index = () => {
       return { ...column, tasks: updatedTasks };
     }));
 
-    // Move tasks between columns based on completion status
     setTimeout(() => {
       setColumns(prevColumns => {
         let taskToMove: Task | null = null;
         let sourceColumnId: string | null = null;
         let targetColumnId: string | null = null;
 
-        // Find the task to move
         prevColumns.forEach(column => {
           column.tasks.forEach(task => {
             if (task.id === taskId) {
@@ -169,12 +156,10 @@ const Index = () => {
           });
         });
 
-        // If task is already in the right column, don't move it
         if (sourceColumnId === targetColumnId || !taskToMove) {
           return prevColumns;
         }
 
-        // Remove task from source column and add to target column
         return prevColumns.map(column => {
           if (column.id === sourceColumnId && column.boardId === activeBoard) {
             return {
@@ -196,11 +181,9 @@ const Index = () => {
 
   const handleMoveTask = (taskId: string, targetColumnId: ColumnId) => {
     setColumns(prevColumns => {
-      // Find the task and its current column
       let taskToMove: Task | null = null;
       let sourceColumnId: string | null = null;
 
-      // Find the task to move
       prevColumns.forEach(column => {
         const task = column.tasks.find(t => t.id === taskId);
         if (task) {
@@ -209,17 +192,14 @@ const Index = () => {
         }
       });
 
-      // If task not found or already in the target column, do nothing
       if (!taskToMove || sourceColumnId === targetColumnId) {
         return prevColumns;
       }
 
-      // Update task's completed status based on the target column
       const newCompletedState = targetColumnId === "done";
       taskToMove.completed = newCompletedState;
       taskToMove.columnId = targetColumnId;
 
-      // Show appropriate toast message
       if (targetColumnId === "inprogress") {
         toast.info("Task moved to In Progress");
       } else if (targetColumnId === "done") {
@@ -228,7 +208,6 @@ const Index = () => {
         toast.info("Task moved back to To Do");
       }
 
-      // Remove task from source column and add to target column
       return prevColumns.map(column => {
         if (column.id === sourceColumnId && column.boardId === activeBoard) {
           return {
@@ -247,13 +226,12 @@ const Index = () => {
     });
   };
 
-  // Filter columns for the active board
   const activeBoardColumns = columns.filter(column => column.boardId === activeBoard);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <WaveBackground />
-      <Header onCreateBoard={() => {}} />
+      <Header />
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
