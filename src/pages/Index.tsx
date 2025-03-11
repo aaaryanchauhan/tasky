@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { Column, Task, ColumnId, Board } from "@/types/task";
 import BoardColumn from "@/components/BoardColumn";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import Header from "@/components/Header";
 import WaveBackground from "@/components/WaveBackground";
 import BoardSelector from "@/components/BoardSelector";
+import { Button } from "@/components/ui/button";
+import { KanbanSquare } from "lucide-react";
+import { saveBoards, saveColumns, loadBoards, loadColumns } from "@/utils/localStorage";
 
 const generateInitialColumns = (boardId: string): Column[] => [
   {
@@ -51,12 +55,31 @@ const initialBoards: Board[] = [
 ];
 
 const Index = () => {
-  const [boards, setBoards] = useState<Board[]>(initialBoards);
-  const [activeBoard, setActiveBoard] = useState<string>(initialBoards[0].id);
-  const [columns, setColumns] = useState<Column[]>(generateInitialColumns(activeBoard));
+  const [boards, setBoards] = useState<Board[]>(() => {
+    const savedBoards = loadBoards();
+    return savedBoards || initialBoards;
+  });
+  
+  const [activeBoard, setActiveBoard] = useState<string>(() => {
+    const savedBoards = loadBoards();
+    return savedBoards && savedBoards.length > 0 ? savedBoards[0].id : initialBoards[0].id;
+  });
+  
+  const [columns, setColumns] = useState<Column[]>(() => {
+    const savedColumns = loadColumns();
+    return savedColumns || generateInitialColumns(activeBoard);
+  });
   
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+
+  useEffect(() => {
+    saveBoards(boards);
+  }, [boards]);
+
+  useEffect(() => {
+    saveColumns(columns);
+  }, [columns]);
 
   useEffect(() => {
     const boardColumns = columns.filter(col => col.boardId === activeBoard);
@@ -235,12 +258,20 @@ const Index = () => {
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          <BoardSelector 
-            boards={boards}
-            activeBoard={activeBoard}
-            onBoardChange={handleBoardChange}
-            onCreateBoard={handleCreateBoard}
-          />
+          <div className="flex justify-between items-center mb-6">
+            <BoardSelector 
+              boards={boards}
+              activeBoard={activeBoard}
+              onBoardChange={handleBoardChange}
+              onCreateBoard={handleCreateBoard}
+            />
+            <Link to="/general">
+              <Button variant="outline" size="sm" className="gap-1">
+                <KanbanSquare className="w-4 h-4" />
+                General Board
+              </Button>
+            </Link>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {activeBoardColumns.map((column) => (

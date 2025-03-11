@@ -9,9 +9,16 @@ interface TaskCardProps {
   onToggle: (id: string) => void;
   onMove: (id: string, targetColumnId: ColumnId) => void;
   currentColumnId: ColumnId;
+  showBoardLabel?: boolean;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onMove, currentColumnId }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ 
+  task, 
+  onToggle, 
+  onMove, 
+  currentColumnId,
+  showBoardLabel = false
+}) => {
   // Setup drag handlers
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData("taskId", task.id);
@@ -33,12 +40,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onMove, currentColu
       className={cn(
         "task-card bg-white dark:bg-gray-800 rounded-lg border p-3 group animate-slide-in",
         "hover:border-primary/30 cursor-grab active:cursor-grabbing",
-        "touch-manipulation"
+        "touch-manipulation relative"
       )}
       draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      {showBoardLabel && (
+        <div className="absolute top-0 right-0 bg-primary text-xs text-white px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
+          {task.boardId}
+        </div>
+      )}
       <div className="flex items-start gap-2">
         <button 
           className={cn(
