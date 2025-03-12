@@ -2,7 +2,7 @@
 import React from 'react';
 import MusicPlayer from './MusicPlayer';
 import Timer from './Timer';
-import SandDial from './SandDial';
+import Quote from './Quote';
 import { Progress } from './ui/progress';
 
 interface DashboardToolsProps {
@@ -10,10 +10,8 @@ interface DashboardToolsProps {
 }
 
 const DashboardTools: React.FC<DashboardToolsProps> = ({ progressPercentage }) => {
-  const [sandLevel, setSandLevel] = React.useState(100);
-
   return (
-    <div className="w-full mb-6">
+    <div className="w-full">
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Tasks Progress: {progressPercentage}% Complete</span>
@@ -21,7 +19,7 @@ const DashboardTools: React.FC<DashboardToolsProps> = ({ progressPercentage }) =
         <Progress value={progressPercentage} className="h-2" />
       </div>
       
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="col-span-1">
           <MusicPlayer />
         </div>
@@ -29,7 +27,7 @@ const DashboardTools: React.FC<DashboardToolsProps> = ({ progressPercentage }) =
           <Timer />
         </div>
         <div className="col-span-1">
-          <SandDial percentage={sandLevel} />
+          <Quote />
         </div>
       </div>
     </div>

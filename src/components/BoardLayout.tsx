@@ -30,7 +30,11 @@ const BoardLayout: React.FC<BoardLayoutProps> = ({
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+          {/* Content area will contain dashboard tools first, then board navigation controls */}
+          {children}
+          
+          {/* Move board selection controls here, after the content */}
+          <div className="flex justify-between items-center mb-6 mt-4">
             <BoardSelector 
               boards={boards}
               activeBoard={activeBoard}
@@ -44,8 +48,6 @@ const BoardLayout: React.FC<BoardLayoutProps> = ({
               </Button>
             </Link>
           </div>
-          
-          {children}
         </div>
       </main>
     </div>

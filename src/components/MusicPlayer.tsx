@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Card } from "@/components/ui/card";
 
 const lofiStations = [
   {
@@ -67,8 +68,8 @@ const MusicPlayer: React.FC = () => {
   };
 
   return (
-    <div className="w-full rounded-lg overflow-hidden">
-      <div className="flex flex-col">
+    <Card className="p-4 h-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-purple-200">
+      <div className="flex flex-col h-full">
         <h3 className="text-lg font-semibold mb-3">Study Lofi Music</h3>
         <div className="flex flex-wrap gap-2 mb-4">
           {lofiStations.map((station, index) => (
@@ -83,7 +84,7 @@ const MusicPlayer: React.FC = () => {
           ))}
         </div>
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -129,7 +130,7 @@ const MusicPlayer: React.FC = () => {
         onEnded={() => setIsPlaying(false)}
         className="hidden"
       />
-    </div>
+    </Card>
   );
 };
 

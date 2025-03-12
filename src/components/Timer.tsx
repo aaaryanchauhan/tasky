@@ -1,14 +1,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 const Timer: React.FC = () => {
   const [time, setTime] = useState(25 * 60); // 25 minutes in seconds
   const [isRunning, setIsRunning] = useState(false);
-  const [sandLevel, setSandLevel] = useState(100);
+  const [isEditing, setIsEditing] = useState(false);
+  const [minutes, setMinutes] = useState("25");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -24,11 +26,7 @@ const Timer: React.FC = () => {
   useEffect(() => {
     if (isRunning && time > 0) {
       intervalRef.current = setInterval(() => {
-        setTime(prev => {
-          const newTime = prev - 1;
-          setSandLevel((newTime / (25 * 60)) * 100);
-          return newTime;
-        });
+        setTime(prev => prev - 1);
       }, 1000);
     } else if (time === 0) {
       setIsRunning(false);
@@ -47,13 +45,31 @@ const Timer: React.FC = () => {
     };
   }, [isRunning, time]);
 
-  const toggleTimer = () => setIsRunning(!isRunning);
+  const toggleTimer = () => {
+    if (isEditing) return;
+    setIsRunning(!isRunning);
+  };
 
   const resetTimer = () => {
     setIsRunning(false);
-    setTime(25 * 60);
-    setSandLevel(100);
+    setTime(parseInt(minutes) * 60 || 25 * 60);
     if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+
+  const handleEditToggle = () => {
+    if (isRunning) return;
+    
+    if (isEditing) {
+      // Save changes
+      const newMinutes = parseInt(minutes);
+      if (!isNaN(newMinutes) && newMinutes > 0) {
+        setTime(newMinutes * 60);
+      } else {
+        setMinutes("25");
+        setTime(25 * 60);
+      }
+    }
+    setIsEditing(!isEditing);
   };
 
   const formatTime = (seconds: number) => {
@@ -63,16 +79,51 @@ const Timer: React.FC = () => {
   };
 
   return (
-    <Card className="p-4">
-      <div className="text-center text-3xl font-bold mb-4">{formatTime(time)}</div>
-      <div className="flex justify-center gap-2 mb-4">
-        <Button onClick={toggleTimer} variant="outline">
-          {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </Button>
-        <Button onClick={resetTimer} variant="outline">
-          <RotateCcw className="h-4 w-4" />
+    <Card className="p-4 h-full">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-lg font-semibold">Focus Timer</h3>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleEditToggle}
+          disabled={isRunning}
+          className="h-8 w-8"
+        >
+          <Edit className="h-4 w-4" />
         </Button>
       </div>
+
+      {isEditing ? (
+        <div className="my-4">
+          <Input
+            type="number"
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+            min="1"
+            max="60"
+            className="text-center text-lg"
+            placeholder="Minutes"
+          />
+          <Button 
+            onClick={handleEditToggle} 
+            className="w-full mt-2"
+          >
+            Set Timer
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="text-center text-3xl font-bold mb-4">{formatTime(time)}</div>
+          <div className="flex justify-center gap-2">
+            <Button onClick={toggleTimer} variant="outline">
+              {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
+            <Button onClick={resetTimer} variant="outline">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
     </Card>
   );
 };
