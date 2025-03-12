@@ -17,6 +17,7 @@ const Index = () => {
     handleAddTask,
     handleCreateTask,
     handleTaskToggle,
+    handleTaskDelete,
     handleMoveTask
   } = useTaskBoard();
 
@@ -31,6 +32,7 @@ const Index = () => {
         columns={activeBoardColumns}
         onAddTask={handleAddTask}
         onTaskToggle={handleTaskToggle}
+        onTaskDelete={handleTaskDelete}
         onMoveTask={handleMoveTask}
       />
 

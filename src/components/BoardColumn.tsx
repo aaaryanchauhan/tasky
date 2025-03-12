@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TaskCard from "./TaskCard";
 import { Task, ColumnId } from "@/types/task";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { useTheme } from "./ThemeProvider";
 
 interface BoardColumnProps {
@@ -13,6 +12,7 @@ interface BoardColumnProps {
   tasks: Task[];
   onAddTask: (columnId: string) => void;
   onTaskToggle: (taskId: string) => void;
+  onTaskDelete: (taskId: string) => void;
   onMoveTask: (taskId: string, targetColumnId: ColumnId) => void;
   id: string;
   color?: string;
@@ -23,6 +23,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   tasks,
   onAddTask,
   onTaskToggle,
+  onTaskDelete,
   onMoveTask,
   id,
   color = "bg-secondary"
@@ -85,7 +86,8 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
             <TaskCard 
               key={task.id} 
               task={task} 
-              onToggle={onTaskToggle} 
+              onToggle={onTaskToggle}
+              onDelete={onTaskDelete}
               onMove={onMoveTask}
               currentColumnId={id as ColumnId}
             />

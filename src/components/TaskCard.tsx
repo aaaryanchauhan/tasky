@@ -1,13 +1,15 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Check, Calendar, GripVertical } from "lucide-react";
+import { Check, Calendar, GripVertical, Trash2 } from "lucide-react";
 import { Task, ColumnId } from "@/types/task";
+import { Button } from "./ui/button";
 
 interface TaskCardProps {
   task: Task;
   onToggle: (id: string) => void;
   onMove: (id: string, targetColumnId: ColumnId) => void;
+  onDelete?: (id: string) => void;
   currentColumnId: ColumnId;
   showBoardLabel?: boolean;
 }
@@ -16,6 +18,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   task, 
   onToggle, 
   onMove, 
+  onDelete,
   currentColumnId,
   showBoardLabel = false
 }) => {
@@ -88,8 +91,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
         </div>
-        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-muted-foreground cursor-grab">
+        <div className="flex items-center gap-2">
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+          <span className="text-muted-foreground cursor-grab opacity-0 group-hover:opacity-100">
             <GripVertical size={16} />
           </span>
         </div>

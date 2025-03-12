@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -242,6 +241,18 @@ export function useTaskBoard() {
     });
   };
 
+  const handleTaskDelete = (taskId: string) => {
+    setColumns(prevColumns => {
+      const newColumns = prevColumns.map(column => ({
+        ...column,
+        tasks: column.tasks.filter(task => task.id !== taskId)
+      }));
+      
+      toast.success("Task deleted successfully");
+      return newColumns;
+    });
+  };
+
   const activeBoardColumns = columns.filter(column => column.boardId === activeBoard);
 
   return {
@@ -256,6 +267,7 @@ export function useTaskBoard() {
     handleAddTask,
     handleCreateTask,
     handleTaskToggle,
+    handleTaskDelete,
     handleMoveTask
   };
 }
