@@ -1,8 +1,12 @@
 
 import React from "react";
 import BoardColumn from "@/components/BoardColumn";
-import { Column, ColumnId } from "@/types/task";
+import { Column, ColumnId, Board } from "@/types/task";
 import DashboardTools from "./DashboardTools";
+import BoardSelector from "@/components/BoardSelector";
+import { KanbanSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface BoardContentProps {
   columns: Column[];
@@ -10,6 +14,10 @@ interface BoardContentProps {
   onTaskToggle: (taskId: string) => void;
   onTaskDelete: (taskId: string) => void;
   onMoveTask: (taskId: string, targetColumnId: ColumnId) => void;
+  boards: Board[];
+  activeBoard: string;
+  onBoardChange: (boardId: string) => void;
+  onCreateBoard: (boardName: string) => void;
 }
 
 const BoardContent: React.FC<BoardContentProps> = ({
@@ -17,7 +25,11 @@ const BoardContent: React.FC<BoardContentProps> = ({
   onAddTask,
   onTaskToggle,
   onTaskDelete,
-  onMoveTask
+  onMoveTask,
+  boards,
+  activeBoard,
+  onBoardChange,
+  onCreateBoard
 }) => {
   // Calculate progress percentage
   const totalTasks = columns.reduce((total, column) => total + column.tasks.length, 0);
@@ -26,10 +38,10 @@ const BoardContent: React.FC<BoardContentProps> = ({
 
   return (
     <>
-      {/* Dashboard tools component (will be rendered first in BoardLayout) */}
+      {/* Dashboard tools component */}
       <DashboardTools progressPercentage={progressPercentage} />
       
-      {/* Progress bar (will be shown between board selection and columns) */}
+      {/* Progress bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Tasks Progress: {progressPercentage}% Complete</span>
@@ -40,6 +52,22 @@ const BoardContent: React.FC<BoardContentProps> = ({
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
+      </div>
+      
+      {/* Board selection controls - moved between progress bar and columns */}
+      <div className="flex justify-between items-center mb-6">
+        <BoardSelector 
+          boards={boards}
+          activeBoard={activeBoard}
+          onBoardChange={onBoardChange}
+          onCreateBoard={onCreateBoard}
+        />
+        <Link to="/general">
+          <Button variant="outline" size="sm" className="gap-1">
+            <KanbanSquare className="w-4 h-4" />
+            General Board
+          </Button>
+        </Link>
       </div>
       
       {/* Board columns */}

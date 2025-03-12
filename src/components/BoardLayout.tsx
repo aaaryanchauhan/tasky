@@ -30,29 +30,8 @@ const BoardLayout: React.FC<BoardLayoutProps> = ({
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          {/* Dashboard tools (music, timer, quote) will be rendered here first */}
-          <div className="mb-6">
-            {Array.isArray(children) && children.length > 0 ? children[0] : null}
-          </div>
-          
-          {/* The rest of children (BoardContent) will be rendered here */}
-          {Array.isArray(children) && children.length > 1 ? children.slice(1) : null}
-          
-          {/* Board selection controls moved to the bottom */}
-          <div className="flex justify-between items-center mt-6">
-            <BoardSelector 
-              boards={boards}
-              activeBoard={activeBoard}
-              onBoardChange={onBoardChange}
-              onCreateBoard={onCreateBoard}
-            />
-            <Link to="/general">
-              <Button variant="outline" size="sm" className="gap-1">
-                <KanbanSquare className="w-4 h-4" />
-                General Board
-              </Button>
-            </Link>
-          </div>
+          {/* Pass all children to be rendered in the BoardContent component */}
+          {children}
         </div>
       </main>
     </div>
