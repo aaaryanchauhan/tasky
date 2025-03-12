@@ -32,12 +32,14 @@ const BoardLayout: React.FC<BoardLayoutProps> = ({
         <div className="max-w-7xl mx-auto">
           {/* Dashboard tools (music, timer, quote) will be rendered here first */}
           <div className="mb-6">
-            {/* The first part of children (DashboardTools) will be rendered here */}
             {Array.isArray(children) && children.length > 0 ? children[0] : null}
           </div>
           
-          {/* Board selection controls */}
-          <div className="flex justify-between items-center mb-6">
+          {/* The rest of children (BoardContent) will be rendered here */}
+          {Array.isArray(children) && children.length > 1 ? children.slice(1) : null}
+          
+          {/* Board selection controls moved to the bottom */}
+          <div className="flex justify-between items-center mt-6">
             <BoardSelector 
               boards={boards}
               activeBoard={activeBoard}
@@ -51,9 +53,6 @@ const BoardLayout: React.FC<BoardLayoutProps> = ({
               </Button>
             </Link>
           </div>
-          
-          {/* The rest of children (BoardContent) will be rendered here */}
-          {Array.isArray(children) && children.length > 1 ? children.slice(1) : null}
         </div>
       </main>
     </div>
