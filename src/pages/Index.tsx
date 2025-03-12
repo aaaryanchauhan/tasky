@@ -21,6 +21,17 @@ const Index = () => {
     handleMoveTask
   } = useTaskBoard();
 
+  // Create a board content instance to pass as children
+  const boardContent = (
+    <BoardContent
+      columns={activeBoardColumns}
+      onAddTask={handleAddTask}
+      onTaskToggle={handleTaskToggle}
+      onTaskDelete={handleTaskDelete}
+      onMoveTask={handleMoveTask}
+    />
+  );
+
   return (
     <BoardLayout
       boards={boards}
@@ -28,13 +39,7 @@ const Index = () => {
       onBoardChange={handleBoardChange}
       onCreateBoard={handleCreateBoard}
     >
-      <BoardContent
-        columns={activeBoardColumns}
-        onAddTask={handleAddTask}
-        onTaskToggle={handleTaskToggle}
-        onTaskDelete={handleTaskDelete}
-        onMoveTask={handleMoveTask}
-      />
+      {boardContent}
 
       <AddTaskDialog
         open={isAddTaskOpen}

@@ -26,7 +26,23 @@ const BoardContent: React.FC<BoardContentProps> = ({
 
   return (
     <>
+      {/* Dashboard tools component (will be rendered first in BoardLayout) */}
       <DashboardTools progressPercentage={progressPercentage} />
+      
+      {/* Progress bar (will be shown between board selection and columns) */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Tasks Progress: {progressPercentage}% Complete</span>
+        </div>
+        <div className="w-full bg-secondary rounded-full h-2 mb-4">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-300 ease-in-out" 
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
+        </div>
+      </div>
+      
+      {/* Board columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {columns.map((column) => (
           <BoardColumn

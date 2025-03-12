@@ -68,7 +68,7 @@ const MusicPlayer: React.FC = () => {
   };
 
   return (
-    <Card className="p-4 h-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-purple-200">
+    <Card className="p-4 h-full bg-[#EFF6FF] border-blue-200">
       <div className="flex flex-col h-full">
         <h3 className="text-lg font-semibold mb-3">Study Lofi Music</h3>
         <div className="flex flex-wrap gap-2 mb-4">
