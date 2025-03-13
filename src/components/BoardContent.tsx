@@ -46,7 +46,7 @@ const BoardContent: React.FC<BoardContentProps> = ({
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Tasks Progress: {progressPercentage}% Complete</span>
         </div>
-        <div className="w-full bg-secondary rounded-full h-2 mb-4">
+        <div className="w-full progress-bar-custom mb-4">
           <div 
             className="bg-primary h-2 rounded-full transition-all duration-300 ease-in-out" 
             style={{ width: `${progressPercentage}%` }}
@@ -54,7 +54,7 @@ const BoardContent: React.FC<BoardContentProps> = ({
         </div>
       </div>
       
-      {/* Board selection controls - moved between progress bar and columns */}
+      {/* Board selection controls - between progress bar and columns */}
       <div className="flex justify-between items-center mb-6">
         <BoardSelector 
           boards={boards}

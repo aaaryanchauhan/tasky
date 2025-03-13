@@ -34,6 +34,8 @@
     --ring: 222 89% 64%;
 
     --radius: 0.75rem;
+    
+    --progress-bg: 210 40% 90%; /* Darker progress bar background in light mode */
   }
 
   .dark {
@@ -64,6 +66,8 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+    
+    --progress-bg: 217.2 32.6% 17.5%; /* Progress bar background in dark mode */
   }
 }
 
@@ -100,6 +104,11 @@
 
 .dark .glass-effect {
   background: rgba(17, 24, 39, 0.7);
+}
+
+/* Custom progress bar color */
+.progress-bar-custom {
+  @apply bg-[hsl(var(--progress-bg))] rounded-full h-2;
 }
 
 /* Wave animation */

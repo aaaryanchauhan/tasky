@@ -68,9 +68,9 @@ const MusicPlayer: React.FC = () => {
   };
 
   return (
-    <Card className="p-4 h-full bg-[#EFF6FF] border-blue-200">
+    <Card className="p-4 h-full bg-[#EFF6FF] dark:bg-slate-800 border-blue-200 dark:border-slate-700">
       <div className="flex flex-col h-full">
-        <h3 className="text-lg font-semibold mb-3">Study Lofi Music</h3>
+        <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">Study Lofi Music</h3>
         <div className="flex flex-wrap gap-2 mb-4">
           {lofiStations.map((station, index) => (
             <Button
@@ -93,9 +93,12 @@ const MusicPlayer: React.FC = () => {
               onClick={handlePlayPause}
               aria-label={isPlaying ? "Pause" : "Play"}
             >
-              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              {isPlaying ? 
+                <Pause className="h-4 w-4 text-black dark:text-white" /> : 
+                <Play className="h-4 w-4 text-black dark:text-white" />
+              }
             </Button>
-            <span className="text-sm font-medium ml-2">
+            <span className="text-sm font-medium ml-2 text-black dark:text-white">
               {isPlaying ? "Now Playing: " + lofiStations[currentStation].name : "Paused"}
             </span>
           </div>
@@ -108,7 +111,10 @@ const MusicPlayer: React.FC = () => {
               onClick={toggleMute}
               aria-label={isMuted ? "Unmute" : "Mute"}
             >
-              {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              {isMuted || volume === 0 ? 
+                <VolumeX className="h-4 w-4 text-black dark:text-white" /> : 
+                <Volume2 className="h-4 w-4 text-black dark:text-white" />
+              }
             </Button>
             <Slider
               value={[volume]}

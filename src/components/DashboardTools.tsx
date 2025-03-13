@@ -2,7 +2,7 @@
 import React from 'react';
 import MusicPlayer from './MusicPlayer';
 import Timer from './Timer';
-import Quote from './Quote';
+import Notes from './Quote';
 
 interface DashboardToolsProps {
   progressPercentage: number;
@@ -19,7 +19,7 @@ const DashboardTools: React.FC<DashboardToolsProps> = ({ progressPercentage }) =
           <Timer />
         </div>
         <div className="col-span-1">
-          <Quote />
+          <Notes />
         </div>
       </div>
     </div>
