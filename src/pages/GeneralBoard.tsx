@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Coffee } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import DashboardTools from "@/components/DashboardTools";
 import { loadBoards } from "@/utils/localStorage";
@@ -170,6 +170,17 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
               </Card>
             );
           })}
+        </div>
+        
+        <div className="mt-6 text-center">
+          <a 
+            href="https://www.buymeacoffee.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Coffee className="h-3 w-3" /> Grab me a coffee
+          </a>
         </div>
       </main>
     </div>
