@@ -11,8 +11,9 @@ import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import MusicPlayer from "@/components/MusicPlayer";
 import { Progress } from "@/components/ui/progress";
+import DashboardTools from "@/components/DashboardTools";
+import { loadBoards } from "@/utils/localStorage";
 
 interface GeneralBoardProps {
   columns: Column[];
@@ -27,6 +28,7 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
 }) => {
   const { theme } = useTheme();
   const [isOver, setIsOver] = React.useState<{ [key: string]: boolean }>({});
+  const [boards, setBoards] = React.useState(() => loadBoards() || []);
   
   // Group all tasks by column type, while preserving their board info
   const organizedColumns: Column[] = ["todo", "inprogress", "done"].map(columnId => {
@@ -80,6 +82,12 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
     }
   };
 
+  // Function to get board name by ID
+  const getBoardName = (boardId: string) => {
+    const board = boards.find(b => b.id === boardId);
+    return board ? board.title : "Unknown";
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <WaveBackground />
@@ -99,9 +107,8 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
             </div>
           </div>
           
-          <div className="bg-background border rounded-lg p-4 mb-6">
-            <MusicPlayer />
-          </div>
+          {/* Dashboard tools component */}
+          <DashboardTools progressPercentage={progressPercentage} />
           
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
@@ -154,8 +161,7 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
                           currentColumnId={column.id as ColumnId}
                         />
                         <div className="absolute top-0 right-0 bg-primary text-xs text-white px-2 py-0.5 rounded-bl-md rounded-tr-md">
-                          {columns.find(col => col.boardId === task.boardId && col.id === task.columnId)?.boardId ? 
-                            columns.find(c => c.boardId === task.boardId)?.boardId : "Unknown"}
+                          {getBoardName(task.boardId)}
                         </div>
                       </div>
                     ))}
