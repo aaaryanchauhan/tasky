@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, LayoutDashboard } from "lucide-react";
 import { 
   Select, 
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Board } from "@/types/task";
+import { toast } from "sonner";
 
 interface BoardSelectorProps {
   boards: Board[];
@@ -35,6 +37,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
+  const navigate = useNavigate();
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +48,27 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
     }
   };
 
+  const handleSelectChange = (value: string) => {
+    if (value === "general-view") {
+      navigate("/general");
+    } else {
+      onBoardChange(value);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2 mb-6">
       <LayoutDashboard className="w-5 h-5 text-primary" />
       <div className="flex-1">
-        <Select value={activeBoard} onValueChange={onBoardChange}>
+        <Select 
+          value={activeBoard} 
+          onValueChange={handleSelectChange}
+        >
           <SelectTrigger className="w-full md:w-[200px]">
             <SelectValue placeholder="Select a board" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="general-view">General View</SelectItem>
             {boards.map(board => (
               <SelectItem key={board.id} value={board.id}>
                 {board.title}
