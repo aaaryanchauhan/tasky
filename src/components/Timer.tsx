@@ -1,16 +1,20 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useTimer } from '@/context/TimerContext';
 
 const Timer: React.FC = () => {
-  const [time, setTime] = useState(25 * 60); // 25 minutes in seconds
-  const [isRunning, setIsRunning] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [minutes, setMinutes] = useState("25");
+  const { 
+    time, setTime,
+    isRunning, setIsRunning,
+    minutes, setMinutes,
+    isEditing, setIsEditing
+  } = useTimer();
+  
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -43,7 +47,7 @@ const Timer: React.FC = () => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, time]);
+  }, [isRunning, time, setTime, setIsRunning]);
 
   const toggleTimer = () => {
     if (isEditing) return;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -12,7 +13,7 @@ export const generateInitialColumns = (boardId: string): Column[] => [
       {
         id: uuidv4(),
         title: "Create new task",
-        description: "Add a brief task description",
+        description: "Add task description",
         completed: false,
         columnId: "todo",
         createdAt: new Date().toISOString(),
