@@ -30,7 +30,8 @@ const Timer: React.FC = () => {
   useEffect(() => {
     if (isRunning && time > 0) {
       intervalRef.current = setInterval(() => {
-        setTime(time => time - 1);
+        // Fix: directly set the new time value instead of using a callback
+        setTime(time - 1);
       }, 1000);
     } else if (time === 0) {
       setIsRunning(false);
