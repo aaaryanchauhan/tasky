@@ -6,9 +6,15 @@ import Notes from './Quote';
 
 interface DashboardToolsProps {
   progressPercentage: number;
+  visible?: boolean;
 }
 
-const DashboardTools: React.FC<DashboardToolsProps> = ({ progressPercentage }) => {
+const DashboardTools: React.FC<DashboardToolsProps> = ({ 
+  progressPercentage,
+  visible = true
+}) => {
+  if (!visible) return null;
+  
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

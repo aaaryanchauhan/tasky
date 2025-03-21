@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Plus, LayoutDashboard } from "lucide-react";
 import { 
   Select, 
@@ -27,6 +26,7 @@ interface BoardSelectorProps {
   activeBoard: string;
   onBoardChange: (boardId: string) => void;
   onCreateBoard: (boardName: string) => void;
+  onGeneralViewSelect: () => void;
 }
 
 const BoardSelector: React.FC<BoardSelectorProps> = ({
@@ -34,10 +34,10 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
   activeBoard,
   onBoardChange,
   onCreateBoard,
+  onGeneralViewSelect,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
-  const navigate = useNavigate();
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +50,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
 
   const handleSelectChange = (value: string) => {
     if (value === "general-view") {
-      navigate("/general");
+      onGeneralViewSelect();
     } else {
       onBoardChange(value);
     }

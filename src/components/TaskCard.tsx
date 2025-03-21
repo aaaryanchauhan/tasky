@@ -1,7 +1,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Check, Calendar, GripVertical, Trash2 } from "lucide-react";
+import { Check, Calendar, GripVertical, Trash2, Edit } from "lucide-react";
 import { Task, ColumnId } from "@/types/task";
 import { Button } from "./ui/button";
 
@@ -10,6 +10,7 @@ interface TaskCardProps {
   onToggle: (id: string) => void;
   onMove: (id: string, targetColumnId: ColumnId) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (task: Task) => void;
   currentColumnId: ColumnId;
   showBoardLabel?: boolean;
 }
@@ -19,6 +20,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onToggle, 
   onMove, 
   onDelete,
+  onEdit,
   currentColumnId,
   showBoardLabel = false
 }) => {
@@ -49,7 +51,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      {showBoardLabel && (
+      {showBoardLabel && task.boardId && (
         <div className="absolute top-0 right-0 bg-primary text-xs text-white px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
           {task.boardId}
         </div>
@@ -78,7 +80,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           </h3>
           {task.description && (
             <p className={cn(
-              "text-xs text-muted-foreground mb-2",
+              "text-xs text-muted-foreground mb-2 break-words overflow-wrap-anywhere",
               task.completed && "line-through opacity-70"
             )}>
               {task.description}
@@ -91,7 +93,20 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(task);
+              }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
           {onDelete && (
             <Button
               variant="ghost"

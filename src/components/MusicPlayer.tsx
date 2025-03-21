@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -54,18 +54,30 @@ const MusicPlayer: React.FC = () => {
   };
 
   const changeStation = (index: number) => {
+    if (index === currentStation) return;
+    
     setCurrentStation(index);
+    
     if (audioRef.current) {
-      const wasPlaying = !audioRef.current.paused;
+      const wasPlaying = isPlaying;
       audioRef.current.src = lofiStations[index].url;
+      
       if (wasPlaying) {
         audioRef.current.play().catch(error => {
           console.error("Audio playback error:", error);
+          setIsPlaying(false);
         });
-        setIsPlaying(true);
       }
     }
   };
+
+  useEffect(() => {
+    // Initialize audio element
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+      audioRef.current.muted = isMuted;
+    }
+  }, []);
 
   return (
     <Card className="p-4 h-full bg-[#EFF6FF] dark:bg-slate-800 border-blue-200 dark:border-slate-700">

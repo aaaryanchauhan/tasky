@@ -1,11 +1,7 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { KanbanSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
 import Header from "@/components/Header";
 import WaveBackground from "@/components/WaveBackground";
-import BoardSelector from "@/components/BoardSelector";
 import { Board } from "@/types/task";
 
 interface BoardLayoutProps {
@@ -23,15 +19,30 @@ const BoardLayout: React.FC<BoardLayoutProps> = ({
   onBoardChange,
   onCreateBoard
 }) => {
+  const [dashboardToolsVisible, setDashboardToolsVisible] = useState(true);
+
+  const handleToggleDashboardTools = () => {
+    setDashboardToolsVisible(!dashboardToolsVisible);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <WaveBackground />
-      <Header />
+      <Header 
+        onToggleDashboardTools={handleToggleDashboardTools}
+        dashboardToolsVisible={dashboardToolsVisible}
+      />
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          {/* Pass all children to be rendered in the BoardContent component */}
-          {children}
+          {React.Children.map(children, child => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child as React.ReactElement<any>, {
+                dashboardToolsVisible
+              });
+            }
+            return child;
+          })}
         </div>
       </main>
     </div>

@@ -6,6 +6,7 @@ import TaskCard from "./TaskCard";
 import { Task, ColumnId } from "@/types/task";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
+import { Button } from "@/components/ui/button";
 
 interface BoardColumnProps {
   title: string;
@@ -14,6 +15,7 @@ interface BoardColumnProps {
   onTaskToggle: (taskId: string) => void;
   onTaskDelete: (taskId: string) => void;
   onMoveTask: (taskId: string, targetColumnId: ColumnId) => void;
+  onEditTask?: (task: Task) => void;
   id: string;
   color?: string;
 }
@@ -25,6 +27,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   onTaskToggle,
   onTaskDelete,
   onMoveTask,
+  onEditTask,
   id,
   color = "bg-secondary"
 }) => {
@@ -74,10 +77,20 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium">{title}</CardTitle>
-          <span className="bg-secondary text-secondary-foreground text-xs font-medium px-2 py-1 rounded-full">
-            {tasks.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="bg-secondary text-secondary-foreground text-xs font-medium px-2 py-1 rounded-full">
+              {tasks.length}
+            </span>
+            <CardTitle className="text-lg font-medium">{title}</CardTitle>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => onAddTask(id)}
+            className="p-0 h-8 w-8 rounded-full"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto">
@@ -89,18 +102,12 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
               onToggle={onTaskToggle}
               onDelete={onTaskDelete}
               onMove={onMoveTask}
+              onEdit={onEditTask}
               currentColumnId={id as ColumnId}
             />
           ))}
         </div>
       </CardContent>
-      <button
-        onClick={() => onAddTask(id)}
-        className="m-3 p-2 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
-      >
-        <Plus size={16} />
-        <span>Add Task</span>
-      </button>
     </Card>
   );
 };

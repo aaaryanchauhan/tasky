@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Edit, Plus, Trash2, Save } from 'lucide-react';
+import { Edit, Plus, Trash2, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Note {
@@ -22,6 +22,7 @@ const Notes: React.FC = () => {
   });
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [viewAll, setViewAll] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('taskflowNotes', JSON.stringify(notes));
@@ -50,28 +51,46 @@ const Notes: React.FC = () => {
     setNotes(notes.filter(note => note.id !== id));
   };
 
+  const visibleNotes = viewAll ? notes : notes.slice(0, 3);
+
   return (
     <Card className="p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-lg font-semibold">Notes</h3>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => setIsAdding(true)}
-          className="h-8 w-8"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {notes.length > 3 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setViewAll(!viewAll)}
+              className="h-8 text-xs flex items-center gap-1"
+            >
+              {viewAll ? (
+                <>Show Less <ChevronUp className="h-3 w-3" /></>
+              ) : (
+                <>View All <ChevronDown className="h-3 w-3" /></>
+              )}
+            </Button>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsAdding(true)}
+            className="h-8 w-8"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto space-y-2">
-        {notes.length === 0 && !isAdding && (
+      <div className="flex-1 overflow-y-auto space-y-2" style={{ maxHeight: '200px' }}>
+        {visibleNotes.length === 0 && !isAdding && (
           <div className="text-center py-4 text-muted-foreground">
             No notes yet. Click the + button to add one.
           </div>
         )}
         
-        {notes.map(note => (
+        {visibleNotes.map(note => (
           <div 
             key={note.id} 
             className="flex items-start gap-2 p-2 border rounded-md group hover:bg-secondary/50"
