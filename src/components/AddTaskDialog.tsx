@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,37 @@ interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddTask: (task: { title: string; description: string; dueDate: Date | undefined }) => void;
+  initialData?: {
+    title: string;
+    description: string;
+    dueDate?: Date;
+  };
+  mode?: "add" | "edit";
 }
 
 const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   open,
   onOpenChange,
   onAddTask,
+  initialData,
+  mode = "add"
 }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+
+  // Set initial values when dialog is opened or initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title);
+      setDescription(initialData.description);
+      setDueDate(initialData.dueDate);
+    } else {
+      setTitle("");
+      setDescription("");
+      setDueDate(undefined);
+    }
+  }, [initialData, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,11 +50,12 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     onAddTask({
       title: title.trim(),
       description: description.trim(),
-      dueDate: undefined,
+      dueDate: dueDate,
     });
     
     setTitle("");
     setDescription("");
+    setDueDate(undefined);
     onOpenChange(false);
   };
 
@@ -41,7 +64,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
       <DialogContent className="sm:max-w-[425px] glass-effect">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Task</DialogTitle>
+            <DialogTitle>{mode === "add" ? "Add Task" : "Edit Task"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -66,7 +89,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={!title.trim()}>
-              Add Task
+              {mode === "add" ? "Add Task" : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
