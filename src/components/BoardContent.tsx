@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import BoardColumn from "@/components/BoardColumn";
 import { Column, ColumnId, Board, Task } from "@/types/task";
@@ -9,6 +10,8 @@ import TaskCard from "./TaskCard";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { Progress } from "@/components/ui/progress";
+import WebsiteLinks from "./WebsiteLinks";
+
 interface BoardContentProps {
   columns: Column[];
   allColumns?: Column[];
@@ -22,6 +25,7 @@ interface BoardContentProps {
   onBoardChange: (boardId: string) => void;
   onCreateBoard: (boardName: string) => void;
 }
+
 const BoardContent: React.FC<BoardContentProps> = ({
   columns,
   allColumns = [],
@@ -36,12 +40,8 @@ const BoardContent: React.FC<BoardContentProps> = ({
   onCreateBoard
 }) => {
   const [showGeneralView, setShowGeneralView] = useState(false);
-  const {
-    theme
-  } = useTheme();
-  const [isOver, setIsOver] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const { theme } = useTheme();
+  const [isOver, setIsOver] = useState<{ [key: string]: boolean }>({});
 
   // Calculate progress percentage
   const totalTasks = columns.reduce((total, column) => total + column.tasks.length, 0);
@@ -52,23 +52,16 @@ const BoardContent: React.FC<BoardContentProps> = ({
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, columnId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setIsOver(prev => ({
-      ...prev,
-      [columnId]: true
-    }));
+    setIsOver(prev => ({ ...prev, [columnId]: true }));
   };
+
   const handleDragLeave = (columnId: string) => {
-    setIsOver(prev => ({
-      ...prev,
-      [columnId]: false
-    }));
+    setIsOver(prev => ({ ...prev, [columnId]: false }));
   };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, columnId: ColumnId) => {
     e.preventDefault();
-    setIsOver(prev => ({
-      ...prev,
-      [columnId]: false
-    }));
+    setIsOver(prev => ({ ...prev, [columnId]: false }));
     const taskId = e.dataTransfer.getData("taskId");
     const sourceColumnId = e.dataTransfer.getData("sourceColumnId") as ColumnId;
     if (taskId && sourceColumnId) {
@@ -98,7 +91,7 @@ const BoardContent: React.FC<BoardContentProps> = ({
     });
   };
 
-  // Function to get board name by ID
+  // Function to get board name by ID - fixed to display only the board name, not the ID
   const getBoardName = (boardId: string) => {
     const board = boards.find(b => b.id === boardId);
     return board ? board.title : "Unknown";
@@ -114,11 +107,16 @@ const BoardContent: React.FC<BoardContentProps> = ({
     setShowGeneralView(false);
     onBoardChange('main');
   };
+  
   const organizedColumns = getOrganizedColumns();
   const generalViewTotalTasks = organizedColumns.reduce((total, column) => total + column.tasks.length, 0);
   const generalViewCompletedTasks = organizedColumns.find(col => col.id === "done")?.tasks.length || 0;
   const generalViewProgressPercentage = generalViewTotalTasks === 0 ? 0 : Math.round(generalViewCompletedTasks / generalViewTotalTasks * 100);
+  
   return <>
+      {/* Website Links Section */}
+      <WebsiteLinks className="mb-6" />
+      
       {/* Dashboard tools component */}
       <DashboardTools progressPercentage={showGeneralView ? generalViewProgressPercentage : progressPercentage} />
       
@@ -183,4 +181,5 @@ const BoardContent: React.FC<BoardContentProps> = ({
         </div>}
     </>;
 };
+
 export default BoardContent;

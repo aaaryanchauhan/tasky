@@ -14,6 +14,7 @@ import { ArrowLeft, Coffee } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import DashboardTools from "@/components/DashboardTools";
 import { loadBoards } from "@/utils/localStorage";
+import WebsiteLinks from "@/components/WebsiteLinks";
 
 interface GeneralBoardProps {
   columns: Column[];
@@ -82,7 +83,7 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
     }
   };
 
-  // Function to get board name by ID
+  // Function to get board name by ID (fixed to display only the board name, not the ID)
   const getBoardName = (boardId: string) => {
     const board = boards.find(b => b.id === boardId);
     return board ? board.title : "Unknown";
@@ -106,6 +107,9 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
               <h1 className="text-2xl font-bold">General Board Overview</h1>
             </div>
           </div>
+          
+          {/* Website Links Section */}
+          <WebsiteLinks className="mb-6" />
           
           {/* Dashboard tools component */}
           <DashboardTools progressPercentage={progressPercentage} />
