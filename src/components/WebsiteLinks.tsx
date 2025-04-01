@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Link as LinkIcon, X, Loader2, FolderPlus, ChevronDown, ChevronRight, Folder, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ interface Website {
   favicon: string;
   title: string;
   folderId?: string;
+  customName?: string;
 }
 
 interface WebsiteFolder {
@@ -32,11 +34,13 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newUrl, setNewUrl] = useState("");
+  const [customName, setCustomName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useLocalStorage<boolean>("taskflow-quicklinks-visible", true);
   const [draggedWebsite, setDraggedWebsite] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const handleAddLink = () => {
     setIsAddingLink(true);
@@ -92,12 +96,14 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
         url: url,
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
         title: domain.replace('www.', ''),
+        customName: customName.trim() || undefined,
         folderId: selectedFolder
       };
       
       // Add to list
       setWebsites([...websites, newWebsite]);
       setNewUrl("");
+      setCustomName("");
       setIsAddingLink(false);
       toast.success("Website added successfully!");
       
@@ -113,7 +119,9 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
     toast.success("Website removed");
   };
 
-  const handleRemoveFolder = (folderId: string) => {
+  const handleRemoveFolder = (folderId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent toggling folder when removing
+    
     // Remove folder
     setFolders(folders.filter(folder => folder.id !== folderId));
     
@@ -132,33 +140,40 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
     ));
   };
 
-  const handleDragStart = (websiteId: string) => {
+  const handleDragStart = (e: React.DragEvent, websiteId: string) => {
+    e.dataTransfer.setData("websiteId", websiteId);
     setDraggedWebsite(websiteId);
   };
 
-  const handleDragOver = (e: React.DragEvent, folderId?: string) => {
+  const handleDragOver = (e: React.DragEvent, targetId: string | null = null) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    setDropTargetId(targetId);
   };
 
-  const handleDrop = (e: React.DragEvent, targetFolderId?: string) => {
+  const handleDragLeave = () => {
+    setDropTargetId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolderId: string | null = null) => {
     e.preventDefault();
+    const websiteId = e.dataTransfer.getData("websiteId");
     
-    if (draggedWebsite) {
+    if (websiteId) {
       // Update the website's folder
-      const updatedWebsites = websites.map(website => 
-        website.id === draggedWebsite 
+      setWebsites(websites.map(website => 
+        website.id === websiteId 
           ? { ...website, folderId: targetFolderId }
           : website
-      );
-      
-      setWebsites(updatedWebsites);
-      setDraggedWebsite(null);
+      ));
       
       toast.success(targetFolderId 
         ? "Link moved to folder" 
         : "Link moved out of folder");
     }
+    
+    setDraggedWebsite(null);
+    setDropTargetId(null);
   };
 
   const rootWebsites = websites.filter(website => !website.folderId);
@@ -210,7 +225,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
 
       <div className="space-y-2">
         {isAddingFolder && (
-          <Card className="w-full max-w-md">
+          <Card className="inline-block w-auto">
             <CardContent className="p-2">
               <form onSubmit={(e) => { e.preventDefault(); handleCreateFolder(); }} className="flex gap-2">
                 <div className="relative flex-1">
@@ -219,7 +234,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     placeholder="Enter folder name"
-                    className="pl-8"
+                    className="pl-8 w-48"
                     autoFocus
                   />
                 </div>
@@ -247,6 +262,12 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
                     autoFocus
                   />
                 </div>
+                <Input 
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Custom name (optional)"
+                  disabled={isLoading}
+                />
                 <div className="flex items-center gap-2">
                   <select 
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -273,14 +294,16 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
         <div 
           className="flex flex-wrap gap-2" 
           onDragOver={(e) => handleDragOver(e)}
+          onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e)}
+          style={{ minHeight: "40px" }}
         >
           {rootWebsites.length > 0 && rootWebsites.map((website) => (
             <Card 
               key={website.id} 
               className="relative group inline-block"
               draggable
-              onDragStart={() => handleDragStart(website.id)}
+              onDragStart={(e) => handleDragStart(e, website.id)}
             >
               <CardContent className="p-2 flex items-center gap-2">
                 <a 
@@ -297,7 +320,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
                       (e.target as HTMLImageElement).src = "/placeholder.svg";
                     }}
                   />
-                  <span className="text-sm">{website.title}</span>
+                  <span className="text-sm pr-5">{website.customName || website.title}</span>
                 </a>
                 <Button 
                   variant="ghost" 
@@ -319,25 +342,26 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
               className="inline-block"
             >
               <Card 
-                className="relative group"
+                className={`relative group ${dropTargetId === folder.id ? 'ring-2 ring-primary' : ''}`}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
+                onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, folder.id)}
               >
                 <CardContent className="p-2">
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full">
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full pr-6">
                     {folder.isOpen ? (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
                     ) : (
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 flex-shrink-0" />
                     )}
-                    <Folder className="w-4 h-4" />
-                    <span className="font-medium">{folder.name}</span>
+                    <Folder className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-medium truncate">{folder.name}</span>
                   </CollapsibleTrigger>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="w-5 h-5 p-0 opacity-0 group-hover:opacity-100 absolute top-2 right-2"
-                    onClick={() => handleRemoveFolder(folder.id)}
+                    onClick={(e) => handleRemoveFolder(folder.id, e)}
                   >
                     <X className="w-3 h-3" />
                   </Button>
@@ -352,7 +376,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
                       key={website.id} 
                       className="relative group"
                       draggable
-                      onDragStart={() => handleDragStart(website.id)}
+                      onDragStart={(e) => handleDragStart(e, website.id)}
                     >
                       <CardContent className="p-2 flex items-center gap-2">
                         <a 
@@ -369,7 +393,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
                               (e.target as HTMLImageElement).src = "/placeholder.svg";
                             }}
                           />
-                          <span className="text-sm">{website.title}</span>
+                          <span className="text-sm pr-5">{website.customName || website.title}</span>
                         </a>
                         <Button 
                           variant="ghost" 
