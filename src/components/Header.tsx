@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({
   const handleToggleDashboardTools = () => {
     if (onToggleDashboardTools) {
       onToggleDashboardTools();
-      toast.info(dashboardToolsVisible ? "Tool section hidden" : "Tool section visible");
+      toast.info(dashboardToolsVisible ? "Tools section hidden" : "Tools section visible");
     }
   };
 
@@ -38,8 +38,8 @@ const Header: React.FC<HeaderProps> = ({
               size="icon"
               className="rounded-full"
               onClick={handleToggleDashboardTools}
-              aria-label={dashboardToolsVisible ? "Hide tool section" : "Show tool section"}
-              title={dashboardToolsVisible ? "Hide tool section" : "Show tool section"}
+              aria-label={dashboardToolsVisible ? "Hide tools section" : "Show tools section"}
+              title={dashboardToolsVisible ? "Hide tools section" : "Show tools section"}
             >
               {dashboardToolsVisible ? (
                 <EyeOff className="h-5 w-5" />
