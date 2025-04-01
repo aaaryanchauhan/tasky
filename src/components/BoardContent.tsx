@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import BoardColumn from "@/components/BoardColumn";
 import { Column, ColumnId, Board, Task } from "@/types/task";
@@ -23,6 +24,7 @@ interface BoardContentProps {
   activeBoard: string;
   onBoardChange: (boardId: string) => void;
   onCreateBoard: (boardName: string) => void;
+  dashboardToolsVisible?: boolean;
 }
 
 const BoardContent: React.FC<BoardContentProps> = ({
@@ -36,7 +38,8 @@ const BoardContent: React.FC<BoardContentProps> = ({
   boards,
   activeBoard,
   onBoardChange,
-  onCreateBoard
+  onCreateBoard,
+  dashboardToolsVisible = true
 }) => {
   const [showGeneralView, setShowGeneralView] = useState(false);
   const { theme } = useTheme();
@@ -109,7 +112,10 @@ const BoardContent: React.FC<BoardContentProps> = ({
   return <>
       <WebsiteLinks className="mb-6" />
       
-      <DashboardTools progressPercentage={showGeneralView ? generalViewProgressPercentage : progressPercentage} />
+      <DashboardTools 
+        progressPercentage={showGeneralView ? generalViewProgressPercentage : progressPercentage} 
+        visible={dashboardToolsVisible}
+      />
       
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
@@ -124,14 +130,27 @@ const BoardContent: React.FC<BoardContentProps> = ({
       </div>
       
       <div className="flex justify-between items-center mb-6">
-        <BoardSelector boards={boards} activeBoard={showGeneralView ? "general-view" : activeBoard} onBoardChange={onBoardChange} onCreateBoard={onCreateBoard} onGeneralViewSelect={handleGeneralViewSelect} />
-        {showGeneralView ? <Button variant="outline" size="sm" className="gap-1" onClick={handleReturnToBoard}>
-            <KanbanSquare className="w-4 h-4" />
-            Return to Board View
-          </Button> : <Button variant="outline" size="sm" onClick={handleGeneralViewSelect} className="\n">
-            <KanbanSquare className="w-4 h-4" />
-            General View
-          </Button>}
+        <div className="flex items-center gap-2">
+          <BoardSelector 
+            boards={boards} 
+            activeBoard={showGeneralView ? "general-view" : activeBoard} 
+            onBoardChange={onBoardChange} 
+            onCreateBoard={onCreateBoard} 
+            onGeneralViewSelect={handleGeneralViewSelect} 
+          />
+          
+          {showGeneralView ? (
+            <Button variant="outline" size="sm" className="gap-1" onClick={handleReturnToBoard}>
+              <KanbanSquare className="w-4 h-4" />
+              Return to Board View
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleGeneralViewSelect} className="gap-1">
+              <KanbanSquare className="w-4 h-4" />
+              General View
+            </Button>
+          )}
+        </div>
       </div>
       
       {showGeneralView ?
