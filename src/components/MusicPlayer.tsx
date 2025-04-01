@@ -1,9 +1,11 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { toast } from "sonner";
 
 const lofiStations = [
   {
@@ -26,6 +28,7 @@ const MusicPlayer: React.FC = () => {
   const [volume, setVolume] = useState(60);
   const [currentStation, setCurrentStation] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isVisible, setIsVisible] = useLocalStorage<boolean>("taskflow-music-visible", true);
 
   const handlePlayPause = () => {
     if (!audioRef.current) return;
@@ -79,10 +82,32 @@ const MusicPlayer: React.FC = () => {
     }
   }, []);
 
+  const toggleVisibility = () => {
+    setIsVisible(!isVisible);
+    toast.info(isVisible ? "Music player hidden" : "Music player visible");
+  };
+
+  if (!isVisible) {
+    return (
+      <Card className="p-4">
+        <Button variant="outline" size="sm" onClick={toggleVisibility} className="gap-1 w-full justify-start">
+          <Eye className="w-4 h-4" />
+          Show Music Player
+        </Button>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-4 h-full bg-[#EFF6FF] dark:bg-slate-800 border-blue-200 dark:border-slate-700">
       <div className="flex flex-col h-full">
-        <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">Study Lofi Music</h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold text-black dark:text-white">Study Lofi Music</h3>
+          <Button variant="ghost" size="sm" onClick={toggleVisibility} title="Hide Music Player">
+            <EyeOff className="w-4 h-4 text-black dark:text-white" />
+          </Button>
+        </div>
+        
         <div className="flex flex-wrap gap-2 mb-4">
           {lofiStations.map((station, index) => (
             <Button
