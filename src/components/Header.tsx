@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { MoveHorizontal, Moon, Sun, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "./ThemeProvider";
@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({
   const handleToggleDashboardTools = () => {
     if (onToggleDashboardTools) {
       onToggleDashboardTools();
-      toast.info(dashboardToolsVisible ? "Dashboard tools hidden" : "Dashboard tools visible");
+      toast.info(dashboardToolsVisible ? "Tool section hidden" : "Tool section visible");
     }
   };
 
@@ -38,8 +38,8 @@ const Header: React.FC<HeaderProps> = ({
               size="icon"
               className="rounded-full"
               onClick={handleToggleDashboardTools}
-              aria-label={dashboardToolsVisible ? "Hide dashboard tools" : "Show dashboard tools"}
-              title={dashboardToolsVisible ? "Hide dashboard tools" : "Show dashboard tools"}
+              aria-label={dashboardToolsVisible ? "Hide tool section" : "Show tool section"}
+              title={dashboardToolsVisible ? "Hide tool section" : "Show tool section"}
             >
               {dashboardToolsVisible ? (
                 <EyeOff className="h-5 w-5" />
