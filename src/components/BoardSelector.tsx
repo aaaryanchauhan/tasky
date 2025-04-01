@@ -57,7 +57,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-2 mb-6">
+    <div className="flex items-center gap-2">
       <LayoutDashboard className="w-5 h-5 text-primary" />
       <div className="flex-1">
         <Select 

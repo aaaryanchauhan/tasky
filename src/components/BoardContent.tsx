@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import BoardColumn from "@/components/BoardColumn";
 import { Column, ColumnId, Board, Task } from "@/types/task";
@@ -138,19 +137,19 @@ const BoardContent: React.FC<BoardContentProps> = ({
             onCreateBoard={onCreateBoard} 
             onGeneralViewSelect={handleGeneralViewSelect} 
           />
-          
-          {showGeneralView ? (
-            <Button variant="outline" size="sm" className="gap-1" onClick={handleReturnToBoard}>
-              <KanbanSquare className="w-4 h-4" />
-              Return to Board View
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={handleGeneralViewSelect} className="gap-1">
-              <KanbanSquare className="w-4 h-4" />
-              General View
-            </Button>
-          )}
         </div>
+        
+        {showGeneralView ? (
+          <Button variant="outline" size="sm" className="gap-1" onClick={handleReturnToBoard}>
+            <KanbanSquare className="w-4 h-4" />
+            Return to Board View
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" onClick={handleGeneralViewSelect} className="gap-1">
+            <KanbanSquare className="w-4 h-4" />
+            General View
+          </Button>
+        )}
       </div>
       
       {showGeneralView ?
