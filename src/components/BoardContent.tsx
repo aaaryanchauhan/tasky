@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import BoardColumn from "@/components/BoardColumn";
 import { Column, ColumnId, Board, Task } from "@/types/task";
@@ -43,12 +42,10 @@ const BoardContent: React.FC<BoardContentProps> = ({
   const { theme } = useTheme();
   const [isOver, setIsOver] = useState<{ [key: string]: boolean }>({});
 
-  // Calculate progress percentage
   const totalTasks = columns.reduce((total, column) => total + column.tasks.length, 0);
   const completedTasks = columns.find(col => col.id === "done")?.tasks.length || 0;
   const progressPercentage = totalTasks === 0 ? 0 : Math.round(completedTasks / totalTasks * 100);
 
-  // Function to handle drag over for general view
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, columnId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -71,7 +68,6 @@ const BoardContent: React.FC<BoardContentProps> = ({
     }
   };
 
-  // Function to organize columns for general view
   const getOrganizedColumns = (): Column[] => {
     if (!allColumns || allColumns.length === 0) return [];
     return ["todo", "inprogress", "done"].map(columnId => {
@@ -91,18 +87,15 @@ const BoardContent: React.FC<BoardContentProps> = ({
     });
   };
 
-  // Function to get board name by ID - fixed to display only the board name, not the ID
   const getBoardName = (boardId: string) => {
     const board = boards.find(b => b.id === boardId);
     return board ? board.title : "Unknown";
   };
 
-  // Handle general view selection
   const handleGeneralViewSelect = () => {
     setShowGeneralView(true);
   };
 
-  // Handle returning to board view
   const handleReturnToBoard = () => {
     setShowGeneralView(false);
     onBoardChange('main');
@@ -114,13 +107,10 @@ const BoardContent: React.FC<BoardContentProps> = ({
   const generalViewProgressPercentage = generalViewTotalTasks === 0 ? 0 : Math.round(generalViewCompletedTasks / generalViewTotalTasks * 100);
   
   return <>
-      {/* Website Links Section */}
       <WebsiteLinks className="mb-6" />
       
-      {/* Dashboard tools component */}
       <DashboardTools progressPercentage={showGeneralView ? generalViewProgressPercentage : progressPercentage} />
       
-      {/* Progress bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">
@@ -133,7 +123,6 @@ const BoardContent: React.FC<BoardContentProps> = ({
         <Progress value={showGeneralView ? generalViewProgressPercentage : progressPercentage} className="h-2" />
       </div>
       
-      {/* Board selection controls */}
       <div className="flex justify-between items-center mb-6">
         <BoardSelector boards={boards} activeBoard={showGeneralView ? "general-view" : activeBoard} onBoardChange={onBoardChange} onCreateBoard={onCreateBoard} onGeneralViewSelect={handleGeneralViewSelect} />
         {showGeneralView ? <Button variant="outline" size="sm" className="gap-1" onClick={handleReturnToBoard}>
@@ -146,10 +135,8 @@ const BoardContent: React.FC<BoardContentProps> = ({
       </div>
       
       {showGeneralView ?
-    // General View
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {organizedColumns.map(column => {
-        // Determine the color class based on the theme
         const colorClass = theme === 'dark' && column.color === 'bg-secondary' ? 'bg-gray-800/50' : column.color;
         return <div key={column.id} className={cn("min-h-[70vh] flex flex-col border overflow-hidden transition-colors duration-300 rounded-lg", colorClass, isOver[column.id] && "ring-2 ring-primary ring-inset")} onDragOver={e => handleDragOver(e, column.id)} onDragLeave={() => handleDragLeave(column.id)} onDrop={e => handleDrop(e, column.id as ColumnId)}>
                 <div className="p-4 border-b">
@@ -175,7 +162,6 @@ const BoardContent: React.FC<BoardContentProps> = ({
               </div>;
       })}
         </div> :
-    // Regular Board View
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {columns.map(column => <BoardColumn key={`${column.boardId}-${column.id}`} id={column.id} title={column.title} tasks={column.tasks} onAddTask={onAddTask} onTaskToggle={onTaskToggle} onTaskDelete={onTaskDelete} onMoveTask={onMoveTask} onEditTask={onEditTask} color={column.color} />)}
         </div>}

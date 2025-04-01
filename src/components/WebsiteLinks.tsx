@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus, Link as LinkIcon, X, Loader2, FolderPlus, ChevronDown, ChevronRight, Folder, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useLocalStorage<boolean>("taskflow-quicklinks-visible", true);
+  const [draggedWebsite, setDraggedWebsite] = useState<string | null>(null);
 
   const handleAddLink = () => {
     setIsAddingLink(true);
@@ -132,7 +132,35 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
     ));
   };
 
-  // Get websites that don't belong to any folder
+  const handleDragStart = (websiteId: string) => {
+    setDraggedWebsite(websiteId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId?: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolderId?: string) => {
+    e.preventDefault();
+    
+    if (draggedWebsite) {
+      // Update the website's folder
+      const updatedWebsites = websites.map(website => 
+        website.id === draggedWebsite 
+          ? { ...website, folderId: targetFolderId }
+          : website
+      );
+      
+      setWebsites(updatedWebsites);
+      setDraggedWebsite(null);
+      
+      toast.success(targetFolderId 
+        ? "Link moved to folder" 
+        : "Link moved out of folder");
+    }
+  };
+
   const rootWebsites = websites.filter(website => !website.folderId);
 
   const toggleVisibility = () => {
@@ -181,7 +209,6 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
       </div>
 
       <div className="space-y-2">
-        {/* Add folder form */}
         {isAddingFolder && (
           <Card className="w-full max-w-md">
             <CardContent className="p-2">
@@ -205,7 +232,6 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
           </Card>
         )}
 
-        {/* Add link form */}
         {isAddingLink && (
           <Card className="w-full max-w-md">
             <CardContent className="p-2">
@@ -244,11 +270,18 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
           </Card>
         )}
 
-        {/* Display folders and links */}
-        <div className="flex flex-wrap gap-2">
-          {/* Root level websites */}
+        <div 
+          className="flex flex-wrap gap-2" 
+          onDragOver={(e) => handleDragOver(e)}
+          onDrop={(e) => handleDrop(e)}
+        >
           {rootWebsites.length > 0 && rootWebsites.map((website) => (
-            <Card key={website.id} className="relative group">
+            <Card 
+              key={website.id} 
+              className="relative group inline-block"
+              draggable
+              onDragStart={() => handleDragStart(website.id)}
+            >
               <CardContent className="p-2 flex items-center gap-2">
                 <a 
                   href={website.url} 
@@ -278,15 +311,18 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
             </Card>
           ))}
           
-          {/* Folders with their websites */}
           {folders.map((folder) => (
             <Collapsible 
               key={folder.id} 
               open={folder.isOpen} 
               onOpenChange={() => toggleFolderOpen(folder.id)}
-              className="w-full"
+              className="inline-block"
             >
-              <Card className="relative group">
+              <Card 
+                className="relative group"
+                onDragOver={(e) => handleDragOver(e, folder.id)}
+                onDrop={(e) => handleDrop(e, folder.id)}
+              >
                 <CardContent className="p-2">
                   <CollapsibleTrigger className="flex items-center gap-2 w-full">
                     {folder.isOpen ? (
@@ -308,41 +344,44 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
                 </CardContent>
               </Card>
               
-              <CollapsibleContent className="mt-1 pl-4 space-y-1">
-                <div className="flex flex-wrap gap-2">
-                  {websites
-                    .filter(website => website.folderId === folder.id)
-                    .map((website) => (
-                      <Card key={website.id} className="relative group w-full">
-                        <CardContent className="p-2 flex items-center gap-2">
-                          <a 
-                            href={website.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="flex items-center gap-2"
-                          >
-                            <img 
-                              src={website.favicon} 
-                              alt={website.title} 
-                              className="w-6 h-6" 
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/placeholder.svg";
-                              }}
-                            />
-                            <span className="text-sm">{website.title}</span>
-                          </a>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="w-5 h-5 p-0 opacity-0 group-hover:opacity-100 absolute top-1 right-1"
-                            onClick={() => handleRemoveWebsite(website.id)}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
+              <CollapsibleContent className="mt-1 ml-4 flex flex-wrap gap-2">
+                {websites
+                  .filter(website => website.folderId === folder.id)
+                  .map((website) => (
+                    <Card 
+                      key={website.id} 
+                      className="relative group"
+                      draggable
+                      onDragStart={() => handleDragStart(website.id)}
+                    >
+                      <CardContent className="p-2 flex items-center gap-2">
+                        <a 
+                          href={website.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2"
+                        >
+                          <img 
+                            src={website.favicon} 
+                            alt={website.title} 
+                            className="w-6 h-6" 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/placeholder.svg";
+                            }}
+                          />
+                          <span className="text-sm">{website.title}</span>
+                        </a>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-5 h-5 p-0 opacity-0 group-hover:opacity-100 absolute top-1 right-1"
+                          onClick={() => handleRemoveWebsite(website.id)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
               </CollapsibleContent>
             </Collapsible>
           ))}

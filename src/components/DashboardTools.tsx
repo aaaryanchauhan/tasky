@@ -3,7 +3,6 @@ import React from 'react';
 import MusicPlayer from './MusicPlayer';
 import Timer from './Timer';
 import Notes from './Quote';
-import WebsiteLinks from './WebsiteLinks';
 
 interface DashboardToolsProps {
   progressPercentage: number;
@@ -18,9 +17,6 @@ const DashboardTools: React.FC<DashboardToolsProps> = ({
   
   return (
     <div className="w-full">
-      <div className="mb-4">
-        <WebsiteLinks />
-      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="col-span-1">
           <MusicPlayer />
