@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ interface Note {
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>(() => {
-    const savedNotes = localStorage.getItem('taskflowNotes');
+    const savedNotes = localStorage.getItem('tasky-notes');
     return savedNotes ? JSON.parse(savedNotes) : [
       { id: uuidv4(), text: 'Add your notes here', completed: false }
     ];
@@ -26,7 +25,7 @@ const Notes: React.FC = () => {
   const [viewAll, setViewAll] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('taskflowNotes', JSON.stringify(notes));
+    localStorage.setItem('tasky-notes', JSON.stringify(notes));
   }, [notes]);
 
   const handleAddNote = () => {

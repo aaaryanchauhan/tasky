@@ -30,8 +30,8 @@ interface WebsiteLinksProps {
 }
 
 const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
-  const [websites, setWebsites] = useLocalStorage<Website[]>("taskflow-websites", []);
-  const [folders, setFolders] = useLocalStorage<WebsiteFolder[]>("taskflow-website-folders", []);
+  const [websites, setWebsites] = useLocalStorage<Website[]>("tasky-websites", []);
+  const [folders, setFolders] = useLocalStorage<WebsiteFolder[]>("tasky-website-folders", []);
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newUrl, setNewUrl] = useState("");
@@ -39,7 +39,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
   const [newFolderName, setNewFolderName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [isVisible, setIsVisible] = useLocalStorage<boolean>("taskflow-quicklinks-visible", true);
+  const [isVisible, setIsVisible] = useLocalStorage<boolean>("tasky-quicklinks-visible", true);
   const [draggedWebsite, setDraggedWebsite] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [dragOverWebsiteId, setDragOverWebsiteId] = useState<string | null>(null);

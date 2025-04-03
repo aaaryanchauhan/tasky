@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useTaskBoard } from "@/hooks/useTaskBoard";
 import BoardLayout from "@/components/BoardLayout";
@@ -55,7 +54,7 @@ const Index = () => {
       });
       
       // Update the tasks in localStorage
-      localStorage.setItem('taskflow-columns', JSON.stringify(newColumns));
+      localStorage.setItem('tasky-columns', JSON.stringify(newColumns));
       
       // Reload the page to refresh the data
       window.location.reload();

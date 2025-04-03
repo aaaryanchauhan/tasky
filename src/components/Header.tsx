@@ -1,6 +1,5 @@
-
 import React from "react";
-import { MoveHorizontal, Moon, Sun, Eye, EyeOff } from "lucide-react";
+import { Check, Moon, Sun, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "./ThemeProvider";
 import { toast } from "sonner";
@@ -28,7 +27,10 @@ const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-x-4">
           <h1 className="text-xl font-medium flex items-center gap-2">
-            <MoveHorizontal size={24} className="text-primary" /> TaskFlow
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Check size={20} className="text-primary-foreground" />
+            </div>
+            Tasky
           </h1>
         </div>
         <div className="flex items-center gap-x-2">
