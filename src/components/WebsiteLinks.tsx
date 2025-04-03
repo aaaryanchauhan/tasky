@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus, Link as LinkIcon, X, Loader2, FolderPlus, ChevronDown, ChevronRight, Folder, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface Website {
   id: string;
@@ -16,6 +16,7 @@ interface Website {
   title: string;
   folderId?: string;
   customName?: string;
+  position: number;
 }
 
 interface WebsiteFolder {
@@ -41,6 +42,7 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
   const [isVisible, setIsVisible] = useLocalStorage<boolean>("taskflow-quicklinks-visible", true);
   const [draggedWebsite, setDraggedWebsite] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [dragOverWebsiteId, setDragOverWebsiteId] = useState<string | null>(null);
 
   const handleAddLink = () => {
     setIsAddingLink(true);
@@ -90,6 +92,10 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
       // Extract domain for favicon
       const domain = new URL(url).hostname;
       
+      // Get max position for the target folder
+      const targetFolderWebsites = websites.filter(w => w.folderId === selectedFolder);
+      const newPosition = getMaxPosition(targetFolderWebsites);
+      
       // Create a new website object
       const newWebsite: Website = {
         id: Date.now().toString(),
@@ -97,7 +103,8 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
         title: domain.replace('www.', ''),
         customName: customName.trim() || undefined,
-        folderId: selectedFolder
+        folderId: selectedFolder,
+        position: newPosition
       };
       
       // Add to list
@@ -142,41 +149,86 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
 
   const handleDragStart = (e: React.DragEvent, websiteId: string) => {
     e.dataTransfer.setData("websiteId", websiteId);
+    e.dataTransfer.setData("sourceType", "website");
     setDraggedWebsite(websiteId);
   };
 
-  const handleDragOver = (e: React.DragEvent, targetId: string | null = null) => {
+  const handleDragOver = (e: React.DragEvent, targetId: string | null = null, websiteId: string | null = null) => {
     e.preventDefault();
+    e.stopPropagation(); // Add this to prevent event bubbling
     e.dataTransfer.dropEffect = "move";
     setDropTargetId(targetId);
+    setDragOverWebsiteId(websiteId);
   };
 
-  const handleDragLeave = () => {
-    setDropTargetId(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetFolderId: string | null = null) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    const websiteId = e.dataTransfer.getData("websiteId");
+    e.stopPropagation(); // Add this to prevent event bubbling
+    setDropTargetId(null);
+    setDragOverWebsiteId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolderId: string | null = null, targetWebsiteId: string | null = null) => {
+    e.preventDefault();
+    e.stopPropagation(); // Add this to prevent event bubbling
     
-    if (websiteId) {
-      // Update the website's folder
-      setWebsites(websites.map(website => 
+    const websiteId = e.dataTransfer.getData("websiteId");
+    const sourceType = e.dataTransfer.getData("sourceType");
+    
+    if (!websiteId || sourceType !== "website") return;
+
+    const websiteToMove = websites.find(w => w.id === websiteId);
+    if (!websiteToMove) return;
+
+    if (targetWebsiteId && targetWebsiteId !== websiteId) {
+      // Reorder within same context (folder or root)
+      reorderWebsites(websiteId, targetWebsiteId);
+    } else {
+      // Move to folder or root
+      const targetFolderWebsites = websites.filter(w => w.folderId === targetFolderId);
+      const newPosition = getMaxPosition(targetFolderWebsites);
+
+      const updatedWebsites = websites.map(website => 
         website.id === websiteId 
-          ? { ...website, folderId: targetFolderId }
+          ? { ...website, folderId: targetFolderId, position: newPosition }
           : website
-      ));
+      );
       
-      toast.success(targetFolderId 
-        ? "Link moved to folder" 
-        : "Link moved out of folder");
+      setWebsites(updatedWebsites);
+      toast.success(targetFolderId ? "Link moved to folder" : "Link moved out of folder");
     }
     
     setDraggedWebsite(null);
     setDropTargetId(null);
+    setDragOverWebsiteId(null);
   };
 
-  const rootWebsites = websites.filter(website => !website.folderId);
+  const getMaxPosition = (websiteList: Website[]) => {
+    return Math.max(...websiteList.map(w => w.position), -1) + 1;
+  };
+
+  const reorderWebsites = (websiteId: string, targetWebsiteId: string) => {
+    const websitesCopy = [...websites];
+    const sourceIndex = websitesCopy.findIndex(w => w.id === websiteId);
+    const targetIndex = websitesCopy.findIndex(w => w.id === targetWebsiteId);
+    
+    if (sourceIndex === -1 || targetIndex === -1) return;
+    
+    const [movedWebsite] = websitesCopy.splice(sourceIndex, 1);
+    websitesCopy.splice(targetIndex, 0, movedWebsite);
+    
+    // Update positions
+    const updatedWebsites = websitesCopy.map((website, index) => ({
+      ...website,
+      position: index
+    }));
+    
+    setWebsites(updatedWebsites);
+    toast.success("Link reordered successfully");
+  };
+
+  const sortedWebsites = [...websites].sort((a, b) => a.position - b.position);
+  const rootWebsites = sortedWebsites.filter(website => !website.folderId);
 
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
@@ -294,16 +346,21 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
         <div 
           className="flex flex-wrap gap-2" 
           onDragOver={(e) => handleDragOver(e)}
-          onDragLeave={handleDragLeave}
+          onDragLeave={(e) => handleDragLeave(e)}
           onDrop={(e) => handleDrop(e)}
           style={{ minHeight: "40px" }}
         >
-          {rootWebsites.length > 0 && rootWebsites.map((website) => (
+          {rootWebsites.map((website) => (
             <Card 
               key={website.id} 
-              className="relative group inline-block"
+              className={cn(
+                "relative group inline-block",
+                dragOverWebsiteId === website.id && "ring-2 ring-primary"
+              )}
               draggable
               onDragStart={(e) => handleDragStart(e, website.id)}
+              onDragOver={(e) => handleDragOver(e, null, website.id)}
+              onDrop={(e) => handleDrop(e, null, website.id)}
             >
               <CardContent className="p-2 flex items-center gap-2">
                 <a 
@@ -342,9 +399,12 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
               className="inline-block"
             >
               <Card 
-                className={`relative group ${dropTargetId === folder.id ? 'ring-2 ring-primary' : ''}`}
+                className={cn(
+                  "relative group cursor-pointer",
+                  dropTargetId === folder.id && "ring-2 ring-primary"
+                )}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
-                onDragLeave={handleDragLeave}
+                onDragLeave={(e) => handleDragLeave(e)}
                 onDrop={(e) => handleDrop(e, folder.id)}
               >
                 <CardContent className="p-2">
@@ -369,14 +429,19 @@ const WebsiteLinks: React.FC<WebsiteLinksProps> = ({ className }) => {
               </Card>
               
               <CollapsibleContent className="mt-1 ml-4 flex flex-wrap gap-2">
-                {websites
+                {sortedWebsites
                   .filter(website => website.folderId === folder.id)
                   .map((website) => (
                     <Card 
                       key={website.id} 
-                      className="relative group"
+                      className={cn(
+                        "relative group",
+                        dragOverWebsiteId === website.id && "ring-2 ring-primary"
+                      )}
                       draggable
                       onDragStart={(e) => handleDragStart(e, website.id)}
+                      onDragOver={(e) => handleDragOver(e, folder.id, website.id)}
+                      onDrop={(e) => handleDrop(e, folder.id, website.id)}
                     >
                       <CardContent className="p-2 flex items-center gap-2">
                         <a 
