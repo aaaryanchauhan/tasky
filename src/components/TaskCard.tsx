@@ -1,9 +1,9 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Check, Calendar, GripVertical, Trash2, Edit } from "lucide-react";
 import { Task, ColumnId } from "@/types/task";
 import { Button } from "./ui/button";
+import { loadBoards } from "@/utils/localStorage";
 
 interface TaskCardProps {
   task: Task;
@@ -24,6 +24,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
   currentColumnId,
   showBoardLabel = false
 }) => {
+  // Get board name from board ID
+  const getBoardName = (boardId: string) => {
+    const boards = loadBoards() || [];
+    const board = boards.find(b => b.id === boardId);
+    return board ? board.title : "Unknown Board";
+  };
+
   // Setup drag handlers
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData("taskId", task.id);
@@ -53,7 +60,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     >
       {showBoardLabel && task.boardId && (
         <div className="absolute top-0 right-0 bg-primary text-xs text-white px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
-          {task.boardId}
+          {getBoardName(task.boardId)}
         </div>
       )}
       <div className="flex items-start gap-2">
