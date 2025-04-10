@@ -81,6 +81,7 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
 
   const openDeleteDialog = (boardId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setBoardToDelete(boardId);
     setIsDeleteDialogOpen(true);
   };
@@ -108,10 +109,12 @@ const BoardSelector: React.FC<BoardSelectorProps> = ({
                 <div className="flex items-center justify-between w-full">
                   <span>{board.title}</span>
                   {onDeleteBoard && boards.length > 1 && (
-                    <Trash2 
-                      className="h-4 w-4 text-destructive hover:text-destructive/80 cursor-pointer ml-2"
+                    <button
                       onClick={(e) => openDeleteDialog(board.id, e)}
-                    />
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   )}
                 </div>
               </SelectItem>

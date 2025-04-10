@@ -77,12 +77,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
         >
           {task.completed && <Check size={12} className="text-white" />}
         </button>
-        <div className="flex-grow min-w-0 pr-16"> {/* Add right padding to prevent content overlap with buttons */}
+        <div className="flex-grow min-w-0 pr-20"> {/* Increased right padding to prevent content overlap with buttons */}
           <h3 
             className={cn(
               "font-medium text-sm break-words mb-1", 
               task.completed && "line-through text-muted-foreground",
-              showBoardLabel && "mt-2" // Add top margin when board label is shown
+              showBoardLabel && "mt-3" // Increased top margin when board label is shown for better spacing
             )}
           >
             {task.title}
