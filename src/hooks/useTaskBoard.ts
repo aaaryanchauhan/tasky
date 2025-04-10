@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -91,6 +92,33 @@ export function useTaskBoard() {
     setActiveBoard(newBoardId);
     
     toast.success(`Board "${boardName}" created`);
+  };
+
+  const handleDeleteBoard = (boardId: string) => {
+    // Don't allow deleting the last board
+    if (boards.length <= 1) {
+      toast.error("Cannot delete the only board");
+      return;
+    }
+    
+    // Get the board name for the toast message
+    const boardToDelete = boards.find(board => board.id === boardId);
+    if (!boardToDelete) return;
+    
+    // Remove the board
+    const updatedBoards = boards.filter(board => board.id !== boardId);
+    setBoards(updatedBoards);
+    
+    // Remove all columns associated with this board
+    const updatedColumns = columns.filter(column => column.boardId !== boardId);
+    setColumns(updatedColumns);
+    
+    // If the active board is being deleted, switch to another board
+    if (activeBoard === boardId) {
+      setActiveBoard(updatedBoards[0].id);
+    }
+    
+    toast.success(`Board "${boardToDelete.title}" deleted`);
   };
 
   const handleAddTask = (columnId: string) => {
@@ -254,6 +282,7 @@ export function useTaskBoard() {
     setIsAddTaskOpen,
     handleBoardChange,
     handleCreateBoard,
+    handleDeleteBoard,
     handleAddTask,
     handleCreateTask,
     handleTaskToggle,

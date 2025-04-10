@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Check, Calendar, GripVertical, Trash2, Edit } from "lucide-react";
@@ -76,7 +77,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         >
           {task.completed && <Check size={12} className="text-white" />}
         </button>
-        <div className="flex-1 min-w-0">
+        <div className="flex-grow min-w-0 pr-8">
           <h3 
             className={cn(
               "font-medium text-sm break-words mb-1", 
@@ -100,35 +101,35 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="absolute right-2 top-2 flex items-center gap-1">
           {onEdit && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(task);
               }}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-3.5 w-3.5" />
             </Button>
           )}
           {onDelete && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(task.id);
               }}
             >
-              <Trash2 className="h-4 w-4 text-destructive" />
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
           )}
           <span className="text-muted-foreground cursor-grab opacity-0 group-hover:opacity-100">
-            <GripVertical size={16} />
+            <GripVertical size={14} />
           </span>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useTaskBoard } from "@/hooks/useTaskBoard";
 import BoardLayout from "@/components/BoardLayout";
@@ -15,6 +16,7 @@ const Index = () => {
     setIsAddTaskOpen,
     handleBoardChange,
     handleCreateBoard,
+    handleDeleteBoard,
     handleAddTask,
     handleCreateTask,
     handleTaskToggle,
@@ -80,6 +82,7 @@ const Index = () => {
         activeBoard={activeBoard}
         onBoardChange={handleBoardChange}
         onCreateBoard={handleCreateBoard}
+        onDeleteBoard={handleDeleteBoard}
       />
 
       <AddTaskDialog

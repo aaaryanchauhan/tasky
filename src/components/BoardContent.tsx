@@ -23,6 +23,7 @@ interface BoardContentProps {
   activeBoard: string;
   onBoardChange: (boardId: string) => void;
   onCreateBoard: (boardName: string) => void;
+  onDeleteBoard?: (boardId: string) => void;
   dashboardToolsVisible?: boolean;
 }
 
@@ -38,6 +39,7 @@ const BoardContent: React.FC<BoardContentProps> = ({
   activeBoard,
   onBoardChange,
   onCreateBoard,
+  onDeleteBoard,
   dashboardToolsVisible = true
 }) => {
   const [showGeneralView, setShowGeneralView] = useState(false);
@@ -134,7 +136,8 @@ const BoardContent: React.FC<BoardContentProps> = ({
             boards={boards} 
             activeBoard={showGeneralView ? "general-view" : activeBoard} 
             onBoardChange={onBoardChange} 
-            onCreateBoard={onCreateBoard} 
+            onCreateBoard={onCreateBoard}
+            onDeleteBoard={onDeleteBoard} 
             onGeneralViewSelect={handleGeneralViewSelect} 
           />
         </div>
