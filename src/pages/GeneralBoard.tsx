@@ -83,12 +83,6 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
     }
   };
 
-  // Function to get board name by ID (fixed to display only the board name, not the ID)
-  const getBoardName = (boardId: string) => {
-    const board = boards.find(b => b.id === boardId);
-    return board ? board.title : "Unknown";
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <WaveBackground />
@@ -157,17 +151,14 @@ const GeneralBoard: React.FC<GeneralBoardProps> = ({
                 <CardContent className="flex-1 overflow-y-auto">
                   <div className="flex flex-col gap-2">
                     {column.tasks.map((task) => (
-                      <div key={task.id} className="relative">
-                        <TaskCard 
-                          task={task} 
-                          onToggle={onTaskToggle} 
-                          onMove={onMoveTask}
-                          currentColumnId={column.id as ColumnId}
-                        />
-                        <div className="absolute top-0 right-0 bg-primary text-xs text-white px-2 py-0.5 rounded-bl-md rounded-tr-md">
-                          {getBoardName(task.boardId)}
-                        </div>
-                      </div>
+                      <TaskCard 
+                        key={task.id}
+                        task={task} 
+                        onToggle={onTaskToggle} 
+                        onMove={onMoveTask}
+                        currentColumnId={column.id as ColumnId}
+                        showBoardLabel={true}
+                      />
                     ))}
                   </div>
                 </CardContent>

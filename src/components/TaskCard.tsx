@@ -60,11 +60,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
       onDragEnd={handleDragEnd}
     >
       {showBoardLabel && task.boardId && (
-        <div className="absolute top-0 right-0 bg-primary text-xs text-white px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
+        <div className="absolute top-0 left-0 bg-primary text-xs text-white px-1.5 py-0.5 rounded-tl-md rounded-br-md">
           {getBoardName(task.boardId)}
         </div>
       )}
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 pr-20"> {/* Added more padding to the right */}
         <button 
           className={cn(
             "flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-muted-foreground/30 flex items-center justify-center",
@@ -77,7 +77,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         >
           {task.completed && <Check size={12} className="text-white" />}
         </button>
-        <div className="flex-grow min-w-0 pr-8">
+        <div className="flex-grow min-w-0">
           <h3 
             className={cn(
               "font-medium text-sm break-words mb-1", 
@@ -101,37 +101,37 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
         </div>
-        <div className="absolute right-2 top-2 flex items-center gap-1">
-          {onEdit && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(task);
-              }}
-            >
-              <Edit className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(task.id);
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-            </Button>
-          )}
-          <span className="text-muted-foreground cursor-grab opacity-0 group-hover:opacity-100">
-            <GripVertical size={14} />
-          </span>
-        </div>
+      </div>
+      <div className="absolute right-2 top-2 flex items-center gap-1">
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(task);
+            }}
+          >
+            <Edit className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(task.id);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </Button>
+        )}
+        <span className="text-muted-foreground cursor-grab opacity-0 group-hover:opacity-100">
+          <GripVertical size={14} />
+        </span>
       </div>
     </div>
   );

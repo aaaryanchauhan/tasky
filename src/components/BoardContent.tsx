@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import BoardColumn from "@/components/BoardColumn";
 import { Column, ColumnId, Board, Task } from "@/types/task";
@@ -91,11 +92,6 @@ const BoardContent: React.FC<BoardContentProps> = ({
     });
   };
 
-  const getBoardName = (boardId: string) => {
-    const board = boards.find(b => b.id === boardId);
-    return board ? board.title : "Unknown";
-  };
-
   const handleGeneralViewSelect = () => {
     setShowGeneralView(true);
   };
@@ -110,7 +106,8 @@ const BoardContent: React.FC<BoardContentProps> = ({
   const generalViewCompletedTasks = organizedColumns.find(col => col.id === "done")?.tasks.length || 0;
   const generalViewProgressPercentage = generalViewTotalTasks === 0 ? 0 : Math.round(generalViewCompletedTasks / generalViewTotalTasks * 100);
   
-  return <>
+  return (
+    <>
       <WebsiteLinks className="mb-6" />
       
       <DashboardTools 
@@ -123,24 +120,24 @@ const BoardContent: React.FC<BoardContentProps> = ({
           <span className="text-sm font-medium">
             Tasks Progress: {showGeneralView ? generalViewProgressPercentage : progressPercentage}% Complete
           </span>
-          {showGeneralView && <span className="text-sm text-muted-foreground">
+          {showGeneralView && (
+            <span className="text-sm text-muted-foreground">
               {generalViewCompletedTasks} of {generalViewTotalTasks} tasks
-            </span>}
+            </span>
+          )}
         </div>
         <Progress value={showGeneralView ? generalViewProgressPercentage : progressPercentage} className="h-2" />
       </div>
       
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <BoardSelector 
-            boards={boards} 
-            activeBoard={showGeneralView ? "general-view" : activeBoard} 
-            onBoardChange={onBoardChange} 
-            onCreateBoard={onCreateBoard}
-            onDeleteBoard={onDeleteBoard} 
-            onGeneralViewSelect={handleGeneralViewSelect} 
-          />
-        </div>
+        <BoardSelector 
+          boards={boards} 
+          activeBoard={showGeneralView ? "general-view" : activeBoard} 
+          onBoardChange={onBoardChange} 
+          onCreateBoard={onCreateBoard}
+          onDeleteBoard={onDeleteBoard} 
+          onGeneralViewSelect={handleGeneralViewSelect} 
+        />
         
         {showGeneralView ? (
           <Button variant="outline" size="sm" className="gap-1" onClick={handleReturnToBoard}>
@@ -155,11 +152,22 @@ const BoardContent: React.FC<BoardContentProps> = ({
         )}
       </div>
       
-      {showGeneralView ?
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {showGeneralView ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {organizedColumns.map(column => {
-        const colorClass = theme === 'dark' && column.color === 'bg-secondary' ? 'bg-gray-800/50' : column.color;
-        return <div key={column.id} className={cn("min-h-[70vh] flex flex-col border overflow-hidden transition-colors duration-300 rounded-lg", colorClass, isOver[column.id] && "ring-2 ring-primary ring-inset")} onDragOver={e => handleDragOver(e, column.id)} onDragLeave={() => handleDragLeave(column.id)} onDrop={e => handleDrop(e, column.id as ColumnId)}>
+            const colorClass = theme === 'dark' && column.color === 'bg-secondary' ? 'bg-gray-800/50' : column.color;
+            return (
+              <div 
+                key={column.id} 
+                className={cn(
+                  "min-h-[70vh] flex flex-col border overflow-hidden transition-colors duration-300 rounded-lg", 
+                  colorClass, 
+                  isOver[column.id] && "ring-2 ring-primary ring-inset"
+                )} 
+                onDragOver={e => handleDragOver(e, column.id)} 
+                onDragLeave={() => handleDragLeave(column.id)} 
+                onDrop={e => handleDrop(e, column.id as ColumnId)}
+              >
                 <div className="p-4 border-b">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -172,21 +180,44 @@ const BoardContent: React.FC<BoardContentProps> = ({
                 </div>
                 <div className="flex-1 overflow-y-auto p-3">
                   <div className="flex flex-col gap-2">
-                    {column.tasks.map(task => <div key={task.id} className="relative">
-                        <TaskCard task={task} onToggle={onTaskToggle} onMove={onMoveTask} onDelete={onTaskDelete} onEdit={onEditTask} currentColumnId={column.id as ColumnId} showBoardLabel />
-                        <div className="absolute top-0 right-0 bg-primary text-xs text-white px-2 py-0.5 rounded-bl-md rounded-tr-md">
-                          {getBoardName(task.boardId)}
-                        </div>
-                      </div>)}
+                    {column.tasks.map(task => (
+                      <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onToggle={onTaskToggle} 
+                        onMove={onMoveTask} 
+                        onDelete={onTaskDelete} 
+                        onEdit={onEditTask} 
+                        currentColumnId={column.id as ColumnId} 
+                        showBoardLabel={true}
+                      />
+                    ))}
                   </div>
                 </div>
-              </div>;
-      })}
-        </div> :
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {columns.map(column => <BoardColumn key={`${column.boardId}-${column.id}`} id={column.id} title={column.title} tasks={column.tasks} onAddTask={onAddTask} onTaskToggle={onTaskToggle} onTaskDelete={onTaskDelete} onMoveTask={onMoveTask} onEditTask={onEditTask} color={column.color} />)}
-        </div>}
-    </>;
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {columns.map(column => (
+            <BoardColumn 
+              key={`${column.boardId}-${column.id}`} 
+              id={column.id} 
+              title={column.title} 
+              tasks={column.tasks} 
+              onAddTask={onAddTask} 
+              onTaskToggle={onTaskToggle} 
+              onTaskDelete={onTaskDelete} 
+              onMoveTask={onMoveTask} 
+              onEditTask={onEditTask} 
+              color={column.color} 
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
 };
 
 export default BoardContent;
