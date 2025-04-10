@@ -81,7 +81,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
           <h3 
             className={cn(
               "font-medium text-sm break-words mb-1", 
-              task.completed && "line-through text-muted-foreground"
+              task.completed && "line-through text-muted-foreground",
+              showBoardLabel && "mt-2" // Add top margin when board label is shown
             )}
           >
             {task.title}

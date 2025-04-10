@@ -96,6 +96,15 @@ const BoardContent: React.FC<BoardContentProps> = ({
     setShowGeneralView(true);
   };
 
+  const handleBoardSelect = (boardId: string) => {
+    if (boardId !== "general-view") {
+      setShowGeneralView(false);
+      onBoardChange(boardId);
+    } else {
+      setShowGeneralView(true);
+    }
+  };
+
   const handleReturnToBoard = () => {
     setShowGeneralView(false);
     onBoardChange('main');
@@ -133,7 +142,7 @@ const BoardContent: React.FC<BoardContentProps> = ({
         <BoardSelector 
           boards={boards} 
           activeBoard={showGeneralView ? "general-view" : activeBoard} 
-          onBoardChange={onBoardChange} 
+          onBoardChange={handleBoardSelect} 
           onCreateBoard={onCreateBoard}
           onDeleteBoard={onDeleteBoard} 
           onGeneralViewSelect={handleGeneralViewSelect} 
