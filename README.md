@@ -47,7 +47,7 @@ Seed plan prices (₹1,000 / ₹2,700 / ₹10,000) are placeholders — set the 
 
 ### Environment variables
 
-See `.env.example`. Only `NEXT_PUBLIC_*` values reach the browser. Everything else (service-role key, WhatsApp token, app secret, verify token, cron secret) is server-only and is never rendered by the UI — Settings only reports *whether* each is set.
+See `.env.example`. Only `NEXT_PUBLIC_*` values reach the browser. Everything else (service-role key, WhatsApp token, app secret, verify token, cron secret, Aadhaar encryption key) is server-only and is never rendered by the UI — Settings only reports *whether* each is set.
 
 ## Tests
 
@@ -69,6 +69,20 @@ Optional per member, added on the Add/Edit screen (the phone's camera or gallery
 - Stored in a **private** Supabase Storage bucket (`member-photos`, created by the third migration). Only admins can read or write it (RLS); photos are shown through 1-hour signed links created on the server, never public URLs.
 - Replacing or removing a photo deletes the old file. **Archiving a member deletes their photo** (payment history is kept). Photos are never sent in WhatsApp messages.
 - Photos are personal data: mention them in the gym's privacy notice.
+
+## Aadhaar number (optional)
+
+An optional field on a member. It is off until the server has an encryption key:
+
+```bash
+openssl rand -base64 32      # → AADHAAR_ENCRYPTION_KEY (server-only; back it up separately)
+```
+
+- **Validated**: 12 digits, not starting 0/1, with the Verhoeff check digit, so typos are rejected. Blank is always allowed.
+- **Encrypted** (AES-256-GCM, bound to the member id) in a separate admin-only table (`member_sensitive`); it is never in member lists, views, logs, WhatsApp messages, or an error response. Without a key, nothing is stored (never plain text). Losing the key makes stored numbers unrecoverable.
+- **Masked** (`XXXX XXXX 1234`) everywhere. **Show** reveals it for 30 seconds and writes an audit entry (who/when, never the number) *before* revealing.
+- Replace by entering a new number; blank leaves it unchanged; a checkbox removes it. **Archiving a member deletes it** (and refuses to archive if the deletion fails).
+- **Compliance:** UIDAI rules and the Aadhaar Act restrict how private entities may collect and keep Aadhaar numbers. Collect it only with the member's informed consent for a stated purpose, list it in your privacy notice, and consider whether you need the full number at all. This is not legal advice.
 
 ## Deploy (Vercel)
 

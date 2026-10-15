@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { PhotoPicker } from "@/components/photo-picker";
+import { maskAadhaar } from "@/lib/aadhaar";
 import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, FormMessage, SelectInput, SubmitButton, TextArea, TextInput } from "@/components/ui/form";
@@ -70,7 +71,65 @@ function ConsentFields({
   );
 }
 
-export function CreateMemberForm({ action, plans, today }: { action: Action; plans: PlanOption[]; today: string }) {
+
+function AadhaarField({
+  enabled,
+  error,
+  last4,
+}: {
+  enabled: boolean;
+  error?: string;
+  last4?: string | null;
+}) {
+  if (!enabled) {
+    return (
+      <p className="rounded-xl bg-stone-50 px-3 py-2 text-sm text-ink-soft">
+        Aadhaar number storage is switched off until the server has an <code>AADHAAR_ENCRYPTION_KEY</code>.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <Field
+        label="Aadhaar number (optional)"
+        htmlFor="aadhaar"
+        error={error}
+        hint={
+          last4
+            ? `On file: ${maskAadhaar(last4)}. Enter a new number to replace it. `
+            : "Collect only with the member's consent. Stored encrypted and shown masked; every time it's revealed is logged."
+        }
+      >
+        <TextInput
+          id="aadhaar"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={14}
+          placeholder="1234 5678 9012"
+          error={error}
+        />
+      </Field>
+      {last4 ? (
+        <label className="flex min-h-11 items-center gap-3 text-sm">
+          <input type="checkbox" name="removeAadhaar" className="size-5 accent-tiger-600" />
+          Remove the stored Aadhaar number
+        </label>
+      ) : null}
+    </div>
+  );
+}
+
+export function CreateMemberForm({
+  action,
+  plans,
+  today,
+  aadhaarEnabled,
+}: {
+  action: Action;
+  plans: PlanOption[];
+  today: string;
+  aadhaarEnabled: boolean;
+}) {
   const [state, formAction] = useActionState(action, null);
   const errors = state?.fieldErrors ?? {};
   const v = state?.values ?? {};
@@ -121,6 +180,7 @@ export function CreateMemberForm({ action, plans, today }: { action: Action; pla
         <Field label="Alternate contact (optional)" htmlFor="alternateContact" error={errors.alternateContact}>
           <TextInput id="alternateContact" maxLength={40} defaultValue={v.alternateContact ?? ""} error={errors.alternateContact} />
         </Field>
+        <AadhaarField enabled={aadhaarEnabled} error={errors.aadhaar} />
       </Card>
 
       <Card className="space-y-4">
@@ -230,11 +290,15 @@ export function EditMemberForm({
   action,
   memberId,
   photoUrl,
+  aadhaarEnabled,
+  aadhaarLast4,
   initial,
 }: {
   action: Action;
   memberId: string;
   photoUrl?: string | null;
+  aadhaarEnabled: boolean;
+  aadhaarLast4: string | null;
   initial: {
     fullName: string;
     phone: string;
@@ -265,6 +329,7 @@ export function EditMemberForm({
         <Field label="Alternate contact (optional)" htmlFor="alternateContact" error={errors.alternateContact}>
           <TextInput id="alternateContact" maxLength={40} defaultValue={v.alternateContact ?? initial.alternateContact} error={errors.alternateContact} />
         </Field>
+        <AadhaarField enabled={aadhaarEnabled || Boolean(aadhaarLast4)} error={errors.aadhaar} last4={aadhaarLast4} />
         <Field label="Joining date" htmlFor="joinedOn" error={errors.joinedOn}>
           <TextInput id="joinedOn" type="date" required defaultValue={v.joinedOn ?? initial.joinedOn} error={errors.joinedOn} />
         </Field>

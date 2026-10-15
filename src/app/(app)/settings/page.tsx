@@ -79,6 +79,10 @@ export default async function SettingsPage() {
             <EnvRow name="WHATSAPP_APP_SECRET" ok={env.appSecret} />
             <EnvRow name="CRON_SECRET" ok={env.cronSecret} />
             <EnvRow name="SUPABASE_SERVICE_ROLE_KEY" ok={env.serviceRoleKey} />
+            <li className="flex items-center justify-between gap-3 py-2">
+              <code className="min-w-0 truncate text-sm">AADHAAR_ENCRYPTION_KEY</code>
+              <Badge tone={env.aadhaarKey ? "good" : "neutral"}>{env.aadhaarKey ? "Set" : "Optional · off"}</Badge>
+            </li>
           </ul>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>

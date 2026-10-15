@@ -59,6 +59,13 @@ export type MemberRow = {
   updated_at: string;
 };
 
+export type MemberSensitiveRow = {
+  member_id: string;
+  aadhaar_ciphertext: string;
+  aadhaar_last4: string;
+  updated_at: string;
+};
+
 export type BillingPeriodRow = {
   id: string;
   member_id: string;
@@ -208,6 +215,7 @@ export type Database = {
           >,
         Omit<Partial<MemberRow>, "billing_anchor_day">
       >;
+      member_sensitive: Table<MemberSensitiveRow>;
       billing_periods: Table<BillingPeriodRow>;
       payments: Table<PaymentRow>;
       message_jobs: Table<

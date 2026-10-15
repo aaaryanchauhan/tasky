@@ -421,3 +421,41 @@ describe("member photos", () => {
     expect(await fails("select * from public.member_overview")).toMatch(/permission denied/);
   });
 });
+
+describe("member Aadhaar storage", () => {
+  it("is admin-only, one row per member, and cleans up with the member", async () => {
+    await actAs(db, "superuser");
+    const m = await addMember(db, { anchor: t });
+    const stranger = (await db.query<{ id: string }>("insert into auth.users (email) values ('aadhaar-stranger@example.test') returning id")).rows[0]!.id;
+
+    await asAdmin();
+    await db.query("insert into public.member_sensitive (member_id, aadhaar_ciphertext, aadhaar_last4) values ($1, $2, '0123')", [m, "v1:" + "x".repeat(30)]);
+    expect((await db.query("select 1 from public.member_sensitive where member_id = $1", [m])).rows).toHaveLength(1);
+    // upsert replaces, never duplicates
+    await db.query(
+      "insert into public.member_sensitive (member_id, aadhaar_ciphertext, aadhaar_last4) values ($1, $2, '9999') on conflict (member_id) do update set aadhaar_ciphertext = excluded.aadhaar_ciphertext, aadhaar_last4 = excluded.aadhaar_last4",
+      [m, "v1:" + "y".repeat(30)],
+    );
+    expect((await db.query<{ aadhaar_last4: string }>("select aadhaar_last4 from public.member_sensitive where member_id = $1", [m])).rows).toEqual([{ aadhaar_last4: "9999" }]);
+
+    await actAs(db, { sub: stranger, role: "authenticated" });
+    expect((await db.query("select 1 from public.member_sensitive")).rows).toHaveLength(0);
+    expect(await fails("insert into public.member_sensitive (member_id, aadhaar_ciphertext, aadhaar_last4) values ($1, $2, '1111')", [m, "v1:" + "z".repeat(30)])).toMatch(/row-level security|duplicate key/);
+    expect((await db.query("delete from public.member_sensitive returning 1")).rows).toHaveLength(0);
+
+    await actAs(db, { role: "anon" });
+    expect(await fails("select * from public.member_sensitive")).toMatch(/permission denied/);
+
+    await actAs(db, "superuser");
+    expect(await fails("insert into public.member_sensitive (member_id, aadhaar_ciphertext, aadhaar_last4) values ($1, 'short', '1234')", [m])).toMatch(/violates check constraint/);
+    expect(await fails("update public.member_sensitive set aadhaar_last4 = 'abcd' where member_id = $1", [m])).toMatch(/violates check constraint/);
+  });
+
+  it("never appears in member lists or the overview view", async () => {
+    await asAdmin();
+    const cols = await db.query<{ column_name: string }>(
+      "select column_name from information_schema.columns where table_schema = 'public' and table_name in ('members', 'member_overview') and column_name ilike '%aadhaar%'",
+    );
+    expect(cols.rows).toHaveLength(0);
+  });
+});

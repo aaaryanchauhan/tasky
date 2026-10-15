@@ -61,3 +61,10 @@ export function flashUrl(path: string, message: string): string {
   const sep = path.includes("?") ? "&" : "?";
   return `${path}${sep}flash=${encodeURIComponent(message)}`;
 }
+
+/** Never echo secrets (e.g. an Aadhaar number) back to the browser in a failed form's state. */
+export function withoutSecrets(raw: Record<string, string>): Record<string, string> {
+  const { aadhaar: _omit, ...rest } = raw;
+  void _omit;
+  return rest;
+}

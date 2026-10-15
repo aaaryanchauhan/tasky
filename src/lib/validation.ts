@@ -2,6 +2,7 @@ import { z } from "zod";
 import { PLAN_CODES } from "./billing";
 import { addDays, compareDates, isValidDate } from "./dates";
 import { parseRupeesToPaise } from "./money";
+import { normalizeAadhaar } from "./aadhaar";
 import { normalizeIndianNumber } from "./phone";
 
 /** MVP guard rails against typos: ₹1 – ₹1,00,000 per term. */
@@ -58,11 +59,27 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? v : null));
 
+/** Optional. Blank → null; otherwise it must be a real, checksum-valid 12-digit Aadhaar number. */
+export const aadhaarField = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value, ctx) => {
+    if (!value) return null;
+    const digits = normalizeAadhaar(value);
+    if (!digits) {
+      ctx.addIssue({ code: "custom", message: "Enter a valid 12-digit Aadhaar number (or leave it blank)" });
+      return z.NEVER;
+    }
+    return digits;
+  });
+
 export const memberCreateSchema = z
   .object({
     fullName: text(120).min(2, "Enter the member's full name"),
     phone: phoneField,
     alternateContact: optionalText(40),
+    aadhaar: aadhaarField,
     joinedOn: dateField,
     planCode: planCodeField,
     agreedPrice: rupeesField,
@@ -89,6 +106,7 @@ export const memberEditSchema = z
     fullName: text(120).min(2, "Enter the member's full name"),
     phone: phoneField,
     alternateContact: optionalText(40),
+    aadhaar: aadhaarField,
     joinedOn: dateField,
     consent: checkbox,
     consentSource: optionalText(120),

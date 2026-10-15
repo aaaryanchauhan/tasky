@@ -51,6 +51,7 @@ export function whatsappEnvStatus() {
     appSecret: has("WHATSAPP_APP_SECRET"),
     cronSecret: has("CRON_SECRET"),
     serviceRoleKey: has("SUPABASE_SERVICE_ROLE_KEY"),
+    aadhaarKey: has("AADHAAR_ENCRYPTION_KEY"),
   };
 }
 

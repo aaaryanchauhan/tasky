@@ -204,6 +204,10 @@ export async function startFakeSupabase(port = 54321) {
             const r = await db.query<{ r: unknown }>(sql, params);
             return { status: 200, json: r.rows.map((x) => x.r) };
           }
+          if (req.method === "DELETE") {
+            const r = await db.query(`with r as (delete from public.${q(table)} t${whereSql(url, params)} returning 1) select count(*)::int n from r`, params);
+            return { status: 204, json: null as unknown, deleted: (r.rows[0] as { n: number }).n };
+          }
           if (req.method === "POST" || req.method === "PATCH") {
             let sql: string;
             if (req.method === "PATCH") {

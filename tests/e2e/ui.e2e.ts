@@ -3,13 +3,14 @@
  * driven by Chromium at phone width (360px). Requires `npm run build` first.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { expect } from "@playwright/test";
 import { afterAll, beforeAll, describe, it } from "vitest";
 import { addDays, todayInTimeZone } from "@/lib/dates";
+import { formatAadhaar, verhoeffCheckDigit } from "@/lib/aadhaar";
 import { ADMIN_EMAIL, ADMIN_PASSWORD, JWT_SECRET, startFakeSupabase } from "./fake-supabase-server";
 
 const APP_PORT = 3199;
@@ -32,6 +33,10 @@ let browser: Browser;
 let ctx: BrowserContext;
 let page: Page;
 let serverLog = "";
+/** Synthetic, checksum-valid numbers used by the Aadhaar tests (not real people). */
+const mk = (body: string) => body + verhoeffCheckDigit(body);
+const AADHAAR_1 = mk("23456789012");
+const AADHAAR_2 = mk("98765432109");
 
 async function sql<T = Record<string, unknown>>(query: string, params: unknown[] = []): Promise<T[]> {
   await supa.db.exec("reset role");
@@ -85,6 +90,7 @@ beforeAll(async () => {
       CRON_SECRET: "e2e-cron-secret",
       WHATSAPP_WEBHOOK_VERIFY_TOKEN: "e2e-verify",
       WHATSAPP_APP_SECRET: "e2e-app-secret",
+      AADHAAR_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
     },
   });
   server.stdout?.on("data", (d) => (serverLog += d));
@@ -348,6 +354,98 @@ describe("admin journey on a phone", () => {
     expect(await sql("select 1 from storage.objects where bucket_id = 'member-photos'")).toHaveLength(0);
   });
 
+  it("stores an optional Aadhaar number encrypted, shows it masked, and reveals it only on request (audited)", async () => {
+    await page.goto(`${APP}/members/new`);
+    await page.getByLabel("Full name").fill("Anita Desai");
+    await page.getByLabel("WhatsApp number").fill("98765 00077");
+    await page.getByLabel("First fee due on").fill(addDays(TODAY, 20));
+
+    // a number with a wrong check digit is rejected, and is not echoed back into the form
+    const wrong = AADHAAR_1.slice(0, 11) + ((Number(AADHAAR_1[11]) + 1) % 10);
+    await page.getByLabel("Aadhaar number (optional)").fill(wrong);
+    await page.getByRole("button", { name: "Add member" }).click();
+    await expect(page.getByText("Enter a valid 12-digit Aadhaar number")).toBeVisible();
+    await expect(page.getByLabel("Aadhaar number (optional)")).toHaveValue("");
+    expect((await page.content()).includes(wrong)).toBe(false);
+    expect(await sql("select 1 from public.members where full_name = 'Anita Desai'")).toHaveLength(0);
+
+    await page.getByLabel("Aadhaar number (optional)").fill(formatAadhaar(AADHAAR_1));
+    await shot("16-add-member-aadhaar");
+    await page.getByRole("button", { name: "Add member" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}/);
+    await toast("Member added");
+
+    // at rest: ciphertext only, last 4 in the clear, nothing in the member row or audit log
+    const [row] = await sql<{ aadhaar_ciphertext: string; aadhaar_last4: string; member_id: string }>("select * from public.member_sensitive");
+    expect(row!.aadhaar_ciphertext.startsWith("v1:")).toBe(true);
+    expect(row!.aadhaar_ciphertext).not.toContain(AADHAAR_1);
+    expect(row!.aadhaar_last4).toBe(AADHAAR_1.slice(-4));
+    expect(JSON.stringify(await sql("select * from public.members where full_name = 'Anita Desai'"))).not.toContain(AADHAAR_1);
+    expect(JSON.stringify(await sql("select * from public.audit_log"))).not.toContain(AADHAAR_1);
+
+    // on screen: masked by default; the full number is not in the page HTML
+    await expect(page.getByTestId("aadhaar-value")).toHaveText(`XXXX XXXX ${AADHAAR_1.slice(-4)}`);
+    expect((await page.content()).includes(AADHAAR_1)).toBe(false);
+    expect((await page.content()).includes(formatAadhaar(AADHAAR_1))).toBe(false);
+    await noHorizontalOverflow("member-aadhaar-masked");
+    await shot("17-aadhaar-masked");
+
+    await page.getByRole("button", { name: "Show" }).click();
+    await expect(page.getByTestId("aadhaar-value")).toHaveText(formatAadhaar(AADHAAR_1));
+    await shot("18-aadhaar-revealed");
+    const reveals = await sql<{ actor_id: string }>("select actor_id from public.audit_log where action = 'aadhaar_revealed'");
+    expect(reveals).toHaveLength(1);
+    expect(reveals[0]!.actor_id).toBe(supa.adminId);
+    expect(JSON.stringify(await sql("select * from public.audit_log"))).not.toContain(AADHAAR_1);
+    await page.getByRole("button", { name: "Hide" }).click();
+    await expect(page.getByTestId("aadhaar-value")).toHaveText(`XXXX XXXX ${AADHAAR_1.slice(-4)}`);
+  });
+
+  it("replaces and removes a stored Aadhaar number from the edit screen; blank means unchanged", async () => {
+    await page.getByRole("link", { name: "Edit" }).click();
+    await expect(page.getByText(`On file: XXXX XXXX ${AADHAAR_1.slice(-4)}`)).toBeVisible();
+    await shot("19-edit-aadhaar");
+    // saving with the field blank leaves it alone
+    await page.getByLabel("Notes (optional)").fill("unchanged aadhaar");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    expect((await sql<{ aadhaar_last4: string }>("select aadhaar_last4 from public.member_sensitive"))[0]!.aadhaar_last4).toBe(AADHAAR_1.slice(-4));
+
+    await page.getByRole("link", { name: "Edit" }).click();
+    await page.getByLabel("Aadhaar number (optional)").fill(AADHAAR_2);
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    const rows = await sql<{ aadhaar_last4: string; aadhaar_ciphertext: string }>("select aadhaar_last4, aadhaar_ciphertext from public.member_sensitive");
+    expect(rows).toHaveLength(1); // replaced, not duplicated
+    expect(rows[0]!.aadhaar_last4).toBe(AADHAAR_2.slice(-4));
+
+    await page.getByRole("link", { name: "Edit" }).click();
+    await page.getByLabel("Remove the stored Aadhaar number").check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    expect(await sql("select 1 from public.member_sensitive")).toHaveLength(0);
+    await expect(page.getByText("Not provided")).toBeVisible();
+    const actions = await sql<{ action: string }>("select action from public.audit_log where action like 'aadhaar_%' order by created_at");
+    expect(actions.map((a) => a.action)).toEqual(["aadhaar_set", "aadhaar_revealed", "aadhaar_set", "aadhaar_removed"]);
+  });
+
+  it("archiving a member deletes their Aadhaar number", async () => {
+    await page.getByRole("link", { name: "Edit" }).click();
+    await page.getByLabel("Aadhaar number (optional)").fill(AADHAAR_1);
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    expect(await sql("select 1 from public.member_sensitive")).toHaveLength(1);
+
+    await page.getByText("Deactivate or archive").click();
+    await page.getByLabel("Action").selectOption("archived");
+    await page.getByRole("button", { name: "Continue…" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Yes, stop billing" }).click();
+    await toast(/archived/);
+    expect(await sql("select 1 from public.member_sensitive")).toHaveLength(0);
+    const [m] = await sql<{ status: string }>("select status from public.members where full_name = 'Anita Desai'");
+    expect(m!.status).toBe("archived");
+  });
+
   it("editing plan list prices leaves existing members and bills untouched", async () => {
     await page.goto(`${APP}/settings`);
     await expect(page.getByRole("heading", { name: "Membership plans" })).toBeVisible();
@@ -459,7 +557,8 @@ describe("scheduler against the real server", () => {
     expect(jobs!.n).toBe(0);
   });
 
-  it("server logs contain no secrets or page errors", async () => {
+  it("server logs contain no secrets, Aadhaar numbers or page errors", async () => {
+    for (const n of [AADHAAR_1, AADHAAR_2, formatAadhaar(AADHAAR_1), formatAadhaar(AADHAAR_2)]) expect(serverLog).not.toContain(n);
     expect(serverLog).not.toContain("e2e-app-secret");
     expect(serverLog).not.toContain("e2e-cron-secret");
     expect(serverLog).not.toContain("[pageerror]");

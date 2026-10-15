@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AadhaarReveal } from "@/components/aadhaar-reveal";
 import { Avatar } from "@/components/avatar";
 import { CancelPeriodButton, RecordPaymentButton, VoidPaymentButton } from "@/components/payment-dialogs";
 import { RetryButton } from "@/components/retry-button";
@@ -20,6 +21,7 @@ import { addDays, formatDateIN, formatTimestampIN, todayInTimeZone } from "@/lib
 import { memberDueInfo } from "@/lib/member-status";
 import { formatINR } from "@/lib/money";
 import { formatPhoneDisplay } from "@/lib/phone";
+import { getAadhaarLast4 } from "@/server/aadhaar";
 import { getGymSettings, requireAdmin } from "@/server/auth";
 import { signedPhotoUrls } from "@/server/photos";
 import { getMemberDetail } from "@/server/queries";
@@ -48,6 +50,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
   const { member: m, periods, payments, jobs, events } = detail;
 
   const photoUrl = m.photo_path ? ((await signedPhotoUrls(supabase, [m.photo_path])).get(m.photo_path) ?? null) : null;
+  const aadhaarLast4 = await getAadhaarLast4(supabase, m.id);
   const due = memberDueInfo(m, today);
   const outstanding = periods.filter((p) => p.outstanding_paise > 0).sort((a, b) => a.due_on.localeCompare(b.due_on));
   const periodById = new Map(periods.map((p) => [p.id, p]));
@@ -96,6 +99,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
           <Info label={due.kind === "paid_up" ? "Next due" : "Due"}>{due.dueOn ? formatDateIN(due.dueOn) : "—"}</Info>
           <Info label="First due date">{formatDateIN(m.first_due_on)}</Info>
           <Info label="Alternate contact">{m.alternate_contact || "—"}</Info>
+          <Info label="Aadhaar">{aadhaarLast4 ? <AadhaarReveal memberId={m.id} last4={aadhaarLast4} /> : "Not provided"}</Info>
           <Info label="WhatsApp consent">
             {m.whatsapp_opt_in_at ? `${formatTimestampIN(m.whatsapp_opt_in_at, settings.timezone)}${m.whatsapp_opt_in_source ? ` · ${m.whatsapp_opt_in_source}` : ""}` : "None recorded"}
           </Info>

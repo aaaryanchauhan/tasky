@@ -18,7 +18,8 @@ import { computeBillingChange, ensureMemberPeriods, loadExistingPeriods, toPerio
 import { removeMemberPhoto, saveMemberPhoto } from "@/server/photos";
 import { skipPendingJobsForMember } from "@/server/reminders";
 import { hasValidConsent } from "@/lib/reminders";
-import { audit, dbErrorMessage, fail, flashUrl, succeed, type ActionState } from "./shared";
+import { aadhaarConfigured, clearAadhaar, getAadhaarLast4, saveAadhaar } from "@/server/aadhaar";
+import { audit, dbErrorMessage, fail, flashUrl, succeed, withoutSecrets, type ActionState } from "./shared";
 import type { MemberRow, PlanRow } from "@/lib/db/types";
 import type { PlanCode } from "@/lib/billing";
 
@@ -31,12 +32,19 @@ async function planByCode(supabase: Awaited<ReturnType<typeof requireAdmin>>["su
 export async function createMemberAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase, user } = await requireAdmin();
   const raw = formToObject(formData);
+  const echo = withoutSecrets(raw);
   const parsed = memberCreateSchema.safeParse(raw);
-  if (!parsed.success) return fail("Please fix the highlighted fields.", { fieldErrors: fieldErrors(parsed.error), values: raw });
+  if (!parsed.success) return fail("Please fix the highlighted fields.", { fieldErrors: fieldErrors(parsed.error), values: echo });
   const v = parsed.data;
+  if (v.aadhaar && !aadhaarConfigured()) {
+    return fail("Please fix the highlighted fields.", {
+      fieldErrors: { aadhaar: "Aadhaar storage isn't set up on the server yet (AADHAAR_ENCRYPTION_KEY)." },
+      values: echo,
+    });
+  }
 
   const plan = await planByCode(supabase, v.planCode);
-  if (!plan) return fail("That plan doesn't exist.", { values: raw });
+  if (!plan) return fail("That plan doesn't exist.", { values: echo });
   const settings = await getGymSettings();
   const today = todayInTimeZone(settings.timezone);
 
@@ -58,7 +66,7 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
     })
     .select("id")
     .single();
-  if (error || !member) return fail(error ? dbErrorMessage(error) : "Could not save the member.", { values: raw });
+  if (error || !member) return fail(error ? dbErrorMessage(error) : "Could not save the member.", { values: echo });
 
   await audit(supabase, user.id, "member", member.id, "created", null, {
     plan: v.planCode,
@@ -68,6 +76,11 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
   });
 
   let flash = "Member added";
+  if (v.aadhaar) {
+    const saved = await saveAadhaar(supabase, member.id, v.aadhaar);
+    if (saved.ok) await audit(supabase, user.id, "member", member.id, "aadhaar_set", null, { aadhaar: "set" });
+    else flash = `Member added — Aadhaar not saved: ${saved.error}`;
+  }
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     const saved = await saveMemberPhoto(supabase, member.id, photo, null);
@@ -89,9 +102,16 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
 export async function updateMemberAction(memberId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase, user } = await requireAdmin();
   const raw = formToObject(formData);
+  const echo = withoutSecrets(raw);
   const parsed = memberEditSchema.safeParse(raw);
-  if (!parsed.success) return fail("Please fix the highlighted fields.", { fieldErrors: fieldErrors(parsed.error), values: raw });
+  if (!parsed.success) return fail("Please fix the highlighted fields.", { fieldErrors: fieldErrors(parsed.error), values: echo });
   const v = parsed.data;
+  if (v.aadhaar && !aadhaarConfigured()) {
+    return fail("Please fix the highlighted fields.", {
+      fieldErrors: { aadhaar: "Aadhaar storage isn't set up on the server yet (AADHAAR_ENCRYPTION_KEY)." },
+      values: echo,
+    });
+  }
 
   const { data: current } = await supabase.from("members").select("*").eq("id", memberId).single();
   if (!current) return fail("Member not found.");
@@ -124,7 +144,7 @@ export async function updateMemberAction(memberId: string, _prev: ActionState, f
   }
 
   const { error } = await supabase.from("members").update(patch).eq("id", memberId);
-  if (error) return fail(dbErrorMessage(error), { values: raw });
+  if (error) return fail(dbErrorMessage(error), { values: echo });
 
   const consentChanged = phoneChanged || v.consent !== hadConsent;
   await audit(supabase, user.id, "member", memberId, "updated", {
@@ -135,10 +155,19 @@ export async function updateMemberAction(memberId: string, _prev: ActionState, f
   }, { full_name: v.fullName, whatsapp_e164: v.phone, joined_on: v.joinedOn, consent: v.consent });
 
   let photoNote = "";
+  if (v.aadhaar) {
+    const saved = await saveAadhaar(supabase, memberId, v.aadhaar);
+    if (saved.ok) await audit(supabase, user.id, "member", memberId, "aadhaar_set", null, { aadhaar: "set" });
+    else photoNote += ` — Aadhaar not saved: ${saved.error}`;
+  } else if (formData.get("removeAadhaar") === "on") {
+    const cleared = await clearAadhaar(supabase, memberId);
+    if (cleared.ok) await audit(supabase, user.id, "member", memberId, "aadhaar_removed", null, { aadhaar: "removed" });
+    else photoNote += ` — Aadhaar not removed: ${cleared.error}`;
+  }
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     const saved = await saveMemberPhoto(supabase, memberId, photo, current.photo_path);
-    if (!saved.ok) photoNote = ` — photo not saved: ${saved.error}`;
+    if (!saved.ok) photoNote += ` — photo not saved: ${saved.error}`;
   } else if (formData.get("removePhoto") === "on" && current.photo_path) {
     await removeMemberPhoto(supabase, memberId, current.photo_path);
   }
@@ -226,12 +255,20 @@ export async function billingChangeAction(memberId: string, _prev: ActionState, 
 }
 
 export async function changeStatusAction(memberId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { supabase } = await requireAdmin();
+  const { supabase, user } = await requireAdmin();
   const raw = formToObject(formData);
   const parsed = statusChangeSchema.safeParse(raw);
   if (!parsed.success) return fail("Please fix the highlighted fields.", { fieldErrors: fieldErrors(parsed.error), values: raw });
 
   const { data: before } = await supabase.from("members").select("photo_path").eq("id", memberId).maybeSingle();
+  if (parsed.data.status === "archived") {
+    // Retain only what's necessary. Delete the Aadhaar number *first* and refuse to archive if that
+    // fails: archived members can't be edited, so a leftover number would have no way to be removed.
+    const hadAadhaar = (await getAadhaarLast4(supabase, memberId)) !== null;
+    const cleared = await clearAadhaar(supabase, memberId);
+    if (!cleared.ok) return fail(`${cleared.error} The member was not archived.`, { values: raw });
+    if (hadAadhaar) await audit(supabase, user.id, "member", memberId, "aadhaar_removed", null, { aadhaar: "removed on archive" });
+  }
   const existing = await loadExistingPeriods(supabase, memberId);
   const cancelIds = planDeactivation(existing, parsed.data.effectiveOn).map((p) => p.id);
   const { error } = await supabase.rpc("set_member_status", {
