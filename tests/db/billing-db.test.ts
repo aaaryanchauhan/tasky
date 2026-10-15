@@ -379,3 +379,45 @@ describe("dashboard summary", () => {
     await fresh.close();
   });
 });
+
+describe("member photos", () => {
+  it("uses a private, size- and type-restricted bucket", async () => {
+    await actAs(db, "superuser");
+    const b = await db.query<{ public: boolean; file_size_limit: string; allowed_mime_types: string[] }>(
+      "select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'member-photos'",
+    );
+    expect(b.rows[0]).toMatchObject({ public: false, allowed_mime_types: ["image/jpeg", "image/png", "image/webp"] });
+    expect(Number(b.rows[0]!.file_size_limit)).toBe(1_048_576);
+  });
+
+  it("only admins can read or write photo objects; anonymous users cannot", async () => {
+    await actAs(db, "superuser");
+    const stranger = (await db.query<{ id: string }>("insert into auth.users (email) values ('photo-stranger@example.test') returning id")).rows[0]!.id;
+
+    await asAdmin();
+    await db.query("insert into storage.objects (bucket_id, name) values ('member-photos', 'm1/a.jpg')");
+    expect((await db.query("select 1 from storage.objects where bucket_id = 'member-photos'")).rows).toHaveLength(1);
+
+    await actAs(db, { sub: stranger, role: "authenticated" });
+    expect((await db.query("select 1 from storage.objects where bucket_id = 'member-photos'")).rows).toHaveLength(0);
+    expect(await fails("insert into storage.objects (bucket_id, name) values ('member-photos', 'm1/evil.jpg')")).toMatch(/row-level security/);
+    expect((await db.query("delete from storage.objects where bucket_id = 'member-photos' returning 1")).rows).toHaveLength(0);
+
+    await actAs(db, { role: "anon" });
+    expect((await db.query("select 1 from storage.objects")).rows).toHaveLength(0);
+    expect(await fails("insert into storage.objects (bucket_id, name) values ('member-photos', 'm1/anon.jpg')")).toMatch(/row-level security|permission denied/);
+  });
+
+  it("exposes photo_path on member_overview and rejects path-traversal values", async () => {
+    await actAs(db, "superuser");
+    const m = await addMember(db, { anchor: t });
+    await db.query("update public.members set photo_path = $1 where id = $2", [`${m}/abc.jpg`, m]);
+    await asAdmin();
+    const r = await db.query<{ photo_path: string }>("select photo_path from public.member_overview where id = $1", [m]);
+    expect(r.rows[0]!.photo_path).toBe(`${m}/abc.jpg`);
+    await actAs(db, "superuser");
+    expect(await fails("update public.members set photo_path = '../../etc/passwd' where id = $1", [m])).toMatch(/violates check constraint/);
+    await actAs(db, { role: "anon" });
+    expect(await fails("select * from public.member_overview")).toMatch(/permission denied/);
+  });
+});

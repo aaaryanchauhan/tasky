@@ -15,6 +15,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getGymSettings, requireAdmin } from "@/server/auth";
 import { computeBillingChange, ensureMemberPeriods, loadExistingPeriods, toPeriodJson } from "@/server/billing";
+import { removeMemberPhoto, saveMemberPhoto } from "@/server/photos";
 import { skipPendingJobsForMember } from "@/server/reminders";
 import { hasValidConsent } from "@/lib/reminders";
 import { audit, dbErrorMessage, fail, flashUrl, succeed, type ActionState } from "./shared";
@@ -67,6 +68,11 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
   });
 
   let flash = "Member added";
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    const saved = await saveMemberPhoto(supabase, member.id, photo, null);
+    if (!saved.ok) flash = `Member added — photo not saved: ${saved.error}`;
+  }
   try {
     await ensureMemberPeriods(
       supabase,
@@ -74,7 +80,7 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
       today,
     );
   } catch {
-    flash = "Member added — billing periods will be created by the next daily run";
+    flash = `${flash} — billing periods will be created by the next daily run`;
   }
   revalidatePath("/", "layout");
   redirect(flashUrl(`/members/${member.id}`, flash));
@@ -128,12 +134,21 @@ export async function updateMemberAction(memberId: string, _prev: ActionState, f
     consent: hadConsent,
   }, { full_name: v.fullName, whatsapp_e164: v.phone, joined_on: v.joinedOn, consent: v.consent });
 
+  let photoNote = "";
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    const saved = await saveMemberPhoto(supabase, memberId, photo, current.photo_path);
+    if (!saved.ok) photoNote = ` — photo not saved: ${saved.error}`;
+  } else if (formData.get("removePhoto") === "on" && current.photo_path) {
+    await removeMemberPhoto(supabase, memberId, current.photo_path);
+  }
+
   if (phoneChanged || (consentChanged && !v.consent)) {
     // Anything queued for the old number / withdrawn consent must not go out.
     await skipPendingJobsForMember(createAdminClient(), memberId, phoneChanged ? "phone_changed" : "opted_out");
   }
   revalidatePath("/", "layout");
-  redirect(flashUrl(`/members/${memberId}`, "Member updated"));
+  redirect(flashUrl(`/members/${memberId}`, `Member updated${photoNote}`));
 }
 
 /** Serialisable preview shown before any billing change is applied. */
@@ -216,6 +231,7 @@ export async function changeStatusAction(memberId: string, _prev: ActionState, f
   const parsed = statusChangeSchema.safeParse(raw);
   if (!parsed.success) return fail("Please fix the highlighted fields.", { fieldErrors: fieldErrors(parsed.error), values: raw });
 
+  const { data: before } = await supabase.from("members").select("photo_path").eq("id", memberId).maybeSingle();
   const existing = await loadExistingPeriods(supabase, memberId);
   const cancelIds = planDeactivation(existing, parsed.data.effectiveOn).map((p) => p.id);
   const { error } = await supabase.rpc("set_member_status", {
@@ -225,6 +241,9 @@ export async function changeStatusAction(memberId: string, _prev: ActionState, f
     p_cancel_ids: cancelIds,
   });
   if (error) return fail(dbErrorMessage(error), { values: raw });
+
+  // Retain only what's necessary: an archived member's photo is deleted (payment history stays).
+  if (parsed.data.status === "archived" && before?.photo_path) await removeMemberPhoto(supabase, memberId, before.photo_path);
 
   revalidatePath("/", "layout");
   redirect(

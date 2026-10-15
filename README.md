@@ -11,7 +11,7 @@ A small, phone-first admin app for **Tiger Fitness**: members, flexible plans (m
 
 | Area | Behaviour |
 | --- | --- |
-| Members | Add / edit / search / filter; deactivate or archive (never hard-delete, payment history is kept) |
+| Members | Add / edit / search / filter; optional **photo** (camera or gallery); deactivate or archive (never hard-delete, payment history is kept) |
 | Plans | Edit the three list prices; a member's *agreed fee* overrides list price; list-price edits never touch existing members or generated bills |
 | Billing | Calendar-month arithmetic (Jan 31 → Feb 28/29 → Mar 31, leap-day safe). Fees are paid **in advance**: a term is due the day it starts. Periods are generated 7 days ahead; creation is idempotent |
 | Changes | Plan / fee / due-date changes need an effective date and show a preview. Started or paid terms are never rewritten or prorated |
@@ -60,6 +60,15 @@ npm run build && npm run test:e2e   # Chromium at 360px against the production b
 - **SQL integration tests** run the real migrations in PGlite (in-process Postgres) with a stubbed Supabase `auth` schema: constraints, RLS, privileges, payments, reversals, job claiming, duplicate prevention.
 - **Pipeline tests** run the real queue/send/webhook services against that schema with Meta mocked.
 - **E2E** uses a *test-only* PostgREST/Auth stand-in (`tests/e2e/fake-supabase-server.ts`). It is not a substitute for `supabase start`; run your own smoke test against a real project before go-live.
+
+## Member photos
+
+Optional per member, added on the Add/Edit screen (the phone's camera or gallery).
+
+- **Resized on the phone** to a 512 px square JPEG before upload (typically 50–150 KB; EXIF location data is dropped). The server still enforces a 1 MB cap and checks the file's real type (JPEG/PNG/WebP — an SVG renamed `.jpg` is rejected).
+- Stored in a **private** Supabase Storage bucket (`member-photos`, created by the third migration). Only admins can read or write it (RLS); photos are shown through 1-hour signed links created on the server, never public URLs.
+- Replacing or removing a photo deletes the old file. **Archiving a member deletes their photo** (payment history is kept). Photos are never sent in WhatsApp messages.
+- Photos are personal data: mention them in the gym's privacy notice.
 
 ## Deploy (Vercel)
 

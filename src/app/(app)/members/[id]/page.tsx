@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Avatar } from "@/components/avatar";
 import { CancelPeriodButton, RecordPaymentButton, VoidPaymentButton } from "@/components/payment-dialogs";
 import { RetryButton } from "@/components/retry-button";
 import { StatusControls } from "@/components/status-controls";
@@ -20,6 +21,7 @@ import { memberDueInfo } from "@/lib/member-status";
 import { formatINR } from "@/lib/money";
 import { formatPhoneDisplay } from "@/lib/phone";
 import { getGymSettings, requireAdmin } from "@/server/auth";
+import { signedPhotoUrls } from "@/server/photos";
 import { getMemberDetail } from "@/server/queries";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +47,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
   if (!detail) notFound();
   const { member: m, periods, payments, jobs, events } = detail;
 
+  const photoUrl = m.photo_path ? ((await signedPhotoUrls(supabase, [m.photo_path])).get(m.photo_path) ?? null) : null;
   const due = memberDueInfo(m, today);
   const outstanding = periods.filter((p) => p.outstanding_paise > 0).sort((a, b) => a.due_on.localeCompare(b.due_on));
   const periodById = new Map(periods.map((p) => [p.id, p]));
@@ -59,7 +62,9 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
           ← Members
         </Link>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-4">
+            <Avatar name={m.full_name} url={photoUrl} size="lg" />
+            <div className="min-w-0">
             <h1 className="break-words text-2xl font-extrabold tracking-tight">{m.full_name}</h1>
             <p className="text-ink-soft">{formatPhoneDisplay(m.whatsapp_e164)}</p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -67,6 +72,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
               <Badge tone="brand">{m.plan_name}</Badge>
               <ConsentBadge optInAt={m.whatsapp_opt_in_at} optOutAt={m.whatsapp_opt_out_at} />
               <DueBadge info={due} />
+            </div>
             </div>
           </div>
           {m.status !== "archived" ? (

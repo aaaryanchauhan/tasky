@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { ChevronRightIcon, PlusIcon, SearchIcon } from "@/components/icons";
 import { ConsentBadge, DueBadge, MemberStatusBadge } from "@/components/status";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { memberDueInfo } from "@/lib/member-status";
 import { formatINR } from "@/lib/money";
 import { formatPhoneDisplay } from "@/lib/phone";
 import { getGymSettings, requireAdmin } from "@/server/auth";
+import { signedPhotoUrls } from "@/server/photos";
 import { listMembers, MEMBER_FILTERS, parseFilter } from "@/server/queries";
 
 export const metadata = { title: "Members" };
@@ -27,6 +29,7 @@ export default async function MembersPage({
   const filter = parseFilter(sp.filter);
   const q = (sp.q ?? "").slice(0, 60);
   const members = await listMembers(supabase, { q, filter, today });
+  const photos = await signedPhotoUrls(supabase, members.map((m) => m.photo_path));
 
   const href = (f: string) => {
     const p = new URLSearchParams();
@@ -97,9 +100,12 @@ export default async function MembersPage({
                 <Link href={`/members/${m.id}`} className="block rounded-2xl">
                   <Card className="transition-colors hover:border-tiger-200">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-lg font-bold">{m.full_name}</p>
-                        <p className="text-sm text-ink-soft">{formatPhoneDisplay(m.whatsapp_e164)}</p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar name={m.full_name} url={m.photo_path ? photos.get(m.photo_path) : null} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-lg font-bold">{m.full_name}</p>
+                          <p className="text-sm text-ink-soft">{formatPhoneDisplay(m.whatsapp_e164)}</p>
+                        </div>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <DueBadge info={due} />

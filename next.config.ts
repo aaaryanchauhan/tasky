@@ -9,6 +9,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Member photos are resized in the browser to well under 1 MB; allow a little headroom for form fields.
+  experimental: { serverActions: { bodySizeLimit: "2mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

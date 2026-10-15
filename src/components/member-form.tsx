@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { PhotoPicker } from "@/components/photo-picker";
 import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, FormMessage, SelectInput, SubmitButton, TextArea, TextInput } from "@/components/ui/form";
@@ -73,6 +74,7 @@ export function CreateMemberForm({ action, plans, today }: { action: Action; pla
   const [state, formAction] = useActionState(action, null);
   const errors = state?.fieldErrors ?? {};
   const v = state?.values ?? {};
+  const [fullName, setFullName] = useState(v.fullName ?? "");
 
   const first = plans[0]!;
   const [planCode, setPlanCode] = useState<PlanCode>((v.planCode as PlanCode) ?? first.code);
@@ -109,8 +111,9 @@ export function CreateMemberForm({ action, plans, today }: { action: Action; pla
   return (
     <form action={formAction} className="space-y-5" noValidate>
       <Card className="space-y-4">
+        <PhotoPicker fullName={fullName} />
         <Field label="Full name" htmlFor="fullName" error={errors.fullName}>
-          <TextInput id="fullName" autoComplete="off" required maxLength={120} defaultValue={v.fullName ?? ""} error={errors.fullName} />
+          <TextInput id="fullName" autoComplete="off" required maxLength={120} value={fullName} onChange={(e) => setFullName(e.target.value)} error={errors.fullName} />
         </Field>
         <Field label="WhatsApp number" htmlFor="phone" error={errors.phone} hint="Indian mobile, e.g. +91 98765 43210">
           <TextInput id="phone" type="tel" inputMode="tel" autoComplete="off" required defaultValue={v.phone ?? ""} error={errors.phone} />
@@ -226,10 +229,12 @@ export function CreateMemberForm({ action, plans, today }: { action: Action; pla
 export function EditMemberForm({
   action,
   memberId,
+  photoUrl,
   initial,
 }: {
   action: Action;
   memberId: string;
+  photoUrl?: string | null;
   initial: {
     fullName: string;
     phone: string;
@@ -244,13 +249,15 @@ export function EditMemberForm({
   const errors = state?.fieldErrors ?? {};
   const v = state?.values ?? {};
   const [phone, setPhone] = useState(v.phone ?? initial.phone);
+  const [fullName, setFullName] = useState(v.fullName ?? initial.fullName);
   const phoneChanged = phone.replace(/\D/g, "").slice(-10) !== initial.phone.replace(/\D/g, "").slice(-10);
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
       <Card className="space-y-4">
+        <PhotoPicker fullName={fullName} currentUrl={photoUrl} />
         <Field label="Full name" htmlFor="fullName" error={errors.fullName}>
-          <TextInput id="fullName" required maxLength={120} defaultValue={v.fullName ?? initial.fullName} error={errors.fullName} />
+          <TextInput id="fullName" required maxLength={120} value={fullName} onChange={(e) => setFullName(e.target.value)} error={errors.fullName} />
         </Field>
         <Field label="WhatsApp number" htmlFor="phone" error={errors.phone}>
           <TextInput id="phone" type="tel" inputMode="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} error={errors.phone} />

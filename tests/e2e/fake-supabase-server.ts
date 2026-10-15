@@ -240,6 +240,94 @@ export async function startFakeSupabase(port = 54321) {
     }
   }
 
+
+  // ── Storage subset (upload / sign / remove / serve), RLS enforced through storage.objects ──────
+  const blobs = new Map<string, { bytes: Buffer; type: string }>();
+  const readBuffer = (req: IncomingMessage) =>
+    new Promise<Buffer>((resolve) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c) => chunks.push(c));
+      req.on("end", () => resolve(Buffer.concat(chunks)));
+    });
+
+  async function storage(req: IncomingMessage, res: ServerResponse, url: URL) {
+    const rel = url.pathname.replace(/^\/storage\/v1\//, "");
+    const auth = req.headers.authorization?.replace(/^Bearer /, "") ?? "";
+    const claims = auth ? verify(auth) : null;
+    const decode = (p: string) => p.split("/").map(decodeURIComponent).join("/");
+
+    // serve a previously signed link (no auth header: the token is the credential)
+    if (req.method === "GET" && rel.startsWith("object/sign/")) {
+      const [bucketAndPath] = [rel.slice("object/sign/".length)];
+      const token = url.searchParams.get("token") ?? "";
+      const t = verify(token);
+      const key = decode(bucketAndPath);
+      const blob = blobs.get(key);
+      if (!t || t.url !== key || !blob) return send(res, 400, { message: "invalid or expired token" });
+      res.writeHead(200, { "content-type": blob.type, "content-length": String(blob.bytes.length), "cache-control": "private, max-age=3600" });
+      return res.end(blob.bytes);
+    }
+
+    const signToken = (key: string, ttl: number) => sign({ url: key, exp: Math.floor(Date.now() / 1000) + ttl });
+
+    try {
+      if (req.method === "POST" && rel.startsWith("object/sign/")) {
+        const rest = decode(rel.slice("object/sign/".length));
+        const body = JSON.parse((await readBody(req)) || "{}");
+        const [bucket, ...pathParts] = rest.split("/");
+        const sign1 = async (path: string) => {
+          const found = await serial(() =>
+            withRole(claims, async () => (await db.query("select 1 from storage.objects where bucket_id = $1 and name = $2", [bucket, path])).rows.length),
+          );
+          if (!found) return null;
+          return `/object/sign/${bucket}/${path}?token=${signToken(`${bucket}/${path}`, Number(body.expiresIn ?? 3600))}`;
+        };
+        if (pathParts.length === 0) {
+          const out = [];
+          for (const path of body.paths as string[]) {
+            const signedURL = await sign1(path);
+            out.push({ path, signedURL, error: signedURL ? null : "Object not found" });
+          }
+          return send(res, 200, out);
+        }
+        const signedURL = await sign1(pathParts.join("/"));
+        return signedURL ? send(res, 200, { signedURL }) : send(res, 400, { error: "Object not found", message: "Object not found", statusCode: "404" });
+      }
+
+      if (req.method === "POST" && rel.startsWith("object/")) {
+        const [bucket, ...pathParts] = decode(rel.slice("object/".length)).split("/");
+        const path = pathParts.join("/");
+        const bytes = await readBuffer(req);
+        const type = String(req.headers["content-type"] ?? "").split(";")[0]!;
+        const b = (await serial(async () => (await db.query<{ file_size_limit: string; allowed_mime_types: string[] }>("select file_size_limit, allowed_mime_types from storage.buckets where id = $1", [bucket])).rows[0]));
+        if (!b) return send(res, 404, { message: "Bucket not found" });
+        if (bytes.length > Number(b.file_size_limit)) return send(res, 413, { message: "The object exceeded the maximum allowed size" });
+        if (!b.allowed_mime_types.includes(type)) return send(res, 415, { message: "mime type not supported" });
+        await serial(() =>
+          withRole(claims, async () => {
+            await db.query("insert into storage.objects (bucket_id, name, owner) values ($1, $2, $3)", [bucket, path, (claims as { sub?: string } | null)?.sub ?? null]);
+          }),
+        );
+        blobs.set(`${bucket}/${path}`, { bytes, type });
+        return send(res, 200, { Id: "x", Key: `${bucket}/${path}` });
+      }
+
+      if (req.method === "DELETE" && rel.startsWith("object/")) {
+        const bucket = decode(rel.slice("object/".length));
+        const body = JSON.parse((await readBody(req)) || "{}");
+        for (const path of body.prefixes as string[]) {
+          const n = await serial(() => withRole(claims, async () => (await db.query("delete from storage.objects where bucket_id = $1 and name = $2 returning 1", [bucket, path])).rows.length));
+          if (n) blobs.delete(`${bucket}/${path}`);
+        }
+        return send(res, 200, []);
+      }
+    } catch (e) {
+      const err = e as { code?: string; message: string };
+      return send(res, err.code === "42501" ? 403 : 400, { message: err.message, statusCode: err.code === "42501" ? "403" : "400", error: err.message });
+    }
+    return send(res, 404, { message: "not found" });
+  }
+
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost:${port}`);
     try {
@@ -263,6 +351,7 @@ export async function startFakeSupabase(port = 54321) {
       }
       if (url.pathname === "/auth/v1/logout") return send(res, 204, undefined);
       if (url.pathname.startsWith("/rest/v1/")) return await rest(req, res, url);
+      if (url.pathname.startsWith("/storage/v1/")) return await storage(req, res, url);
       // test-only: let the harness run SQL as superuser (seeding / assertions)
       if (url.pathname === "/__sql" && req.method === "POST") {
         const { sql, params } = JSON.parse(await readBody(req));

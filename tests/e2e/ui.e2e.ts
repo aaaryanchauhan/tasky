@@ -253,6 +253,101 @@ describe("admin journey on a phone", () => {
     expect(m).toEqual({ agreed_price_paise: 90_000, code: "monthly" });
   });
 
+  it("adds a member photo: big phone-sized image is resized in the browser, stored privately, shown via signed link", async () => {
+    await page.goto(`${APP}/members`);
+    await page.getByRole("link", { name: /Rohit Sharma/ }).first().click();
+    await page.getByRole("link", { name: "Edit" }).click();
+    // an intentionally large 4000x3000 image, like a phone camera produces
+    const b64 = await page.evaluate(() => {
+      const c = document.createElement("canvas");
+      c.width = 4000; c.height = 3000;
+      const g = c.getContext("2d")!;
+      const grad = g.createLinearGradient(0, 0, 4000, 3000);
+      grad.addColorStop(0, "#f97316"); grad.addColorStop(1, "#1a1613");
+      g.fillStyle = grad; g.fillRect(0, 0, 4000, 3000);
+      g.fillStyle = "#fff"; g.beginPath(); g.arc(2000, 1500, 800, 0, Math.PI * 2); g.fill();
+      for (let i = 0; i < 4000; i += 7) { g.fillStyle = `rgb(${i % 255},${(i * 3) % 255},${(i * 7) % 255})`; g.fillRect(i, (i * 13) % 3000, 5, 5); }
+      return c.toDataURL("image/png").split(",")[1]!;
+    });
+    const original = Buffer.from(b64, "base64");
+    expect(original.length).toBeGreaterThan(100_000);
+    await page.locator("#photo").setInputFiles({ name: "IMG_0001.png", mimeType: "image/png", buffer: original });
+    await expect(page.getByRole("button", { name: "Remove photo" })).toBeVisible();
+    await shot("13-photo-picked");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    await toast("Member updated");
+
+    const [row] = await sql<{ photo_path: string }>("select photo_path from public.members where full_name = 'Rohit Sharma'");
+    expect(row!.photo_path).toMatch(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg$/); // re-encoded as JPEG by the browser
+    // shown on the detail page through a short-lived signed link, not a public URL
+    const img = page.locator("main img").first();
+    await expect(img).toBeVisible();
+    const src = await img.getAttribute("src");
+    expect(src).toContain("/storage/v1/object/sign/member-photos/");
+    expect(src).toContain("token=");
+    const size = await img.evaluate((el) => ({ w: (el as HTMLImageElement).naturalWidth, h: (el as HTMLImageElement).naturalHeight }));
+    expect(size).toEqual({ w: 512, h: 512 });
+    const bytes = Number((await fetch(src!).then((r) => r.headers.get("content-length"))) ?? 0);
+    expect(bytes).toBeGreaterThan(0);
+    expect(bytes).toBeLessThan(1_048_576);
+    expect(bytes).toBeLessThan(original.length / 3);
+    // the bucket is private: the unsigned object URL does not work
+    const unsigned = await fetch(`http://127.0.0.1:${SUPA_PORT}/storage/v1/object/public/member-photos/${row!.photo_path}`);
+    expect(unsigned.status).toBeGreaterThanOrEqual(400);
+    await noHorizontalOverflow("member-with-photo");
+    await shot("14-member-with-photo");
+
+    // list shows it too
+    await page.goto(`${APP}/members`);
+    await expect(page.locator("main img").first()).toBeVisible();
+    await shot("15-members-with-photo");
+  });
+
+  it("replaces a photo (old file deleted) and removes it on request", async () => {
+    const [before] = await sql<{ photo_path: string }>("select photo_path from public.members where full_name = 'Rohit Sharma'");
+    await page.goto(`${APP}/members`);
+    await page.getByRole("link", { name: /Rohit Sharma/ }).first().click();
+    await page.getByRole("link", { name: "Edit" }).click();
+    const png = Buffer.from(await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 800; c.height = 600; const g = c.getContext("2d")!; g.fillStyle = "#0ea5e9"; g.fillRect(0, 0, 800, 600); return c.toDataURL("image/png").split(",")[1]!; }), "base64");
+    await page.locator("#photo").setInputFiles({ name: "new.png", mimeType: "image/png", buffer: png });
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    const [after] = await sql<{ photo_path: string }>("select photo_path from public.members where full_name = 'Rohit Sharma'");
+    expect(after!.photo_path).not.toBe(before!.photo_path);
+    const objects = await sql<{ name: string }>("select name from storage.objects where bucket_id = 'member-photos'");
+    expect(objects.map((o) => o.name)).toEqual([after!.photo_path]); // old object removed, no orphans
+
+    await page.getByRole("link", { name: "Edit" }).click();
+    await page.getByRole("button", { name: "Remove photo" }).click();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    const [gone] = await sql<{ photo_path: string | null }>("select photo_path from public.members where full_name = 'Rohit Sharma'");
+    expect(gone!.photo_path).toBeNull();
+    expect(await sql("select 1 from storage.objects where bucket_id = 'member-photos'")).toHaveLength(0);
+    await expect(page.locator("main img")).toHaveCount(0); // back to initials
+  });
+
+  it("rejects a non-image disguised as a photo through the real form, and still saves the rest", async () => {
+    await page.goto(`${APP}/members`);
+    await page.getByRole("link", { name: /Rohit Sharma/ }).first().click();
+    await page.getByRole("link", { name: "Edit" }).click();
+    await expect(page.locator("#photo")).toBeAttached();
+    // Skip the browser-side resize (no change event) to simulate a hostile client posting an SVG as .jpg.
+    await page.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(["<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>"], "evil.jpg", { type: "image/jpeg" }));
+      (document.querySelector("#photo") as HTMLInputElement).files = dt.files;
+    });
+    await page.getByLabel("Notes (optional)").fill("saved despite bad photo");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL(/\/members\/[0-9a-f-]{36}$/);
+    await toast(/photo not saved: Use a JPEG, PNG or WebP photo/);
+    const [m] = await sql<{ photo_path: string | null; notes: string }>("select photo_path, notes from public.members where full_name = 'Rohit Sharma'");
+    expect(m).toEqual({ photo_path: null, notes: "saved despite bad photo" });
+    expect(await sql("select 1 from storage.objects where bucket_id = 'member-photos'")).toHaveLength(0);
+  });
+
   it("editing plan list prices leaves existing members and bills untouched", async () => {
     await page.goto(`${APP}/settings`);
     await expect(page.getByRole("heading", { name: "Membership plans" })).toBeVisible();

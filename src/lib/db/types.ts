@@ -54,6 +54,7 @@ export type MemberRow = {
   whatsapp_opt_in_source: string | null;
   whatsapp_opt_out_at: string | null;
   notes: string | null;
+  photo_path: string | null;
   created_at: string;
   updated_at: string;
 };
