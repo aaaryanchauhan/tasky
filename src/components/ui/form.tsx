@@ -1,176 +1,114 @@
-import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot } from "@radix-ui/react-slot"
-import {
-  Controller,
-  ControllerProps,
-  FieldPath,
-  FieldValues,
-  FormProvider,
-  useFormContext,
-} from "react-hook-form"
+"use client";
 
-import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
+import { useFormStatus } from "react-dom";
+import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { buttonClass } from "./button";
 
-const Form = FormProvider
+export const inputClass =
+  "block w-full min-h-11 rounded-xl border border-line bg-white px-3 py-2 text-base text-ink placeholder:text-stone-400 focus:border-tiger-500 disabled:bg-stone-100 aria-[invalid=true]:border-red-500";
 
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
-> = {
-  name: TName
-}
-
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-)
-
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
+export function Field({
+  label,
+  htmlFor,
+  error,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  error?: string;
+  hint?: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
-  )
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className="block text-sm font-semibold">
+        {label}
+      </label>
+      {children}
+      {hint ? <p className="text-xs text-ink-soft">{hint}</p> : null}
+      {error ? (
+        <p id={`${htmlFor}-error`} role="alert" className="text-sm font-medium text-red-700">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
-const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
-  const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
-
-  const fieldState = getFieldState(fieldContext.name, formState)
-
-  if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
-  }
-
-  const { id } = itemContext
-
-  return {
-    id,
-    name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    ...fieldState,
-  }
-}
-
-type FormItemContextValue = {
-  id: string
-}
-
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-)
-
-const FormItem = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const id = React.useId()
-
+export function TextInput({ error, id, ...props }: InputHTMLAttributes<HTMLInputElement> & { error?: string; id: string }) {
   return (
-    <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
-    </FormItemContext.Provider>
-  )
-})
-FormItem.displayName = "FormItem"
-
-const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField()
-
-  return (
-    <Label
-      ref={ref}
-      className={cn(error && "text-destructive", className)}
-      htmlFor={formItemId}
+    <input
+      id={id}
+      name={props.name ?? id}
+      className={inputClass}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${id}-error` : undefined}
       {...props}
     />
-  )
-})
-FormLabel.displayName = "FormLabel"
+  );
+}
 
-const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
-  React.ComponentPropsWithoutRef<typeof Slot>
->(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
-
+export function SelectInput({ error, id, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { error?: string; id: string }) {
   return (
-    <Slot
-      ref={ref}
-      id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={!!error}
+    <select
+      id={id}
+      name={props.name ?? id}
+      className={inputClass}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${id}-error` : undefined}
       {...props}
     />
-  )
-})
-FormControl.displayName = "FormControl"
+  );
+}
 
-const FormDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => {
-  const { formDescriptionId } = useFormField()
-
+export function TextArea({ error, id, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: string; id: string }) {
   return (
-    <p
-      ref={ref}
-      id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
+    <textarea
+      id={id}
+      name={props.name ?? id}
+      rows={3}
+      className={inputClass}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${id}-error` : undefined}
       {...props}
     />
-  )
-})
-FormDescription.displayName = "FormDescription"
+  );
+}
 
-const FormMessage = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message) : children
-
-  if (!body) {
-    return null
-  }
-
+export function SubmitButton({
+  children,
+  pendingLabel = "Saving…",
+  variant = "primary",
+  size = "md",
+  className = "",
+  name,
+  value,
+}: {
+  children: ReactNode;
+  pendingLabel?: string;
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+  size?: "sm" | "md" | "lg";
+  className?: string;
+  name?: string;
+  value?: string;
+}) {
+  const { pending } = useFormStatus();
   return (
-    <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
-      {...props}
+    <button type="submit" name={name} value={value} disabled={pending} aria-busy={pending} className={buttonClass(variant, size, className)}>
+      {pending ? pendingLabel : children}
+    </button>
+  );
+}
+
+export function FormMessage({ state }: { state: { ok: boolean; message?: string } | null }) {
+  if (!state?.message) return null;
+  return (
+    <div
+      role={state.ok ? "status" : "alert"}
+      className={`rounded-xl px-3 py-2 text-sm font-medium ${state.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}
     >
-      {body}
-    </p>
-  )
-})
-FormMessage.displayName = "FormMessage"
-
-export {
-  useFormField,
-  Form,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-  FormField,
+      {state.message}
+    </div>
+  );
 }

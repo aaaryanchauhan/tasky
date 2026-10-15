@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Tiger orange */
+  --color-tiger-50: #fff5ec;
+  --color-tiger-100: #ffe6d0;
+  --color-tiger-200: #ffcb9f;
+  --color-tiger-400: #fb923c;
+  --color-tiger-500: #f97316;
+  --color-tiger-600: #ea580c;
+  --color-tiger-700: #c2410c;
+  --color-tiger-900: #7c2d12;
+
+  /* Warm black / neutrals */
+  --color-ink: #1a1613;
+  --color-ink-soft: #57504a;
+  --color-line: #e7e1da;
+  --color-surface: #fbf8f5;
+  --color-card: #ffffff;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-tiger-500);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(26 22 19 / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
