@@ -28,6 +28,8 @@ export async function getDashboard(supabase: Client, today: DateOnly) {
     supabase.from("billing_period_summary").select("*").eq("is_overdue", true).order("days_overdue", { ascending: false }).limit(25),
   ]);
   if (summary.error || !summary.data) throw new Error(`Dashboard unavailable: ${summary.error?.message}`);
+  const listError = dueSoon.error ?? overdue.error;
+  if (listError) throw new Error(`Dashboard lists unavailable: ${listError.message}`);
   return {
     summary: summary.data,
     dueSoon: (dueSoon.data ?? []) as BillingPeriodSummaryRow[],
@@ -109,11 +111,12 @@ export async function getMemberDetail(supabase: Client, id: string) {
   const { data: member } = await supabase.from("member_overview").select("*").eq("id", id).maybeSingle();
   if (!member) return null;
 
-  const { data: periods } = await supabase
+  const { data: periods, error: periodsError } = await supabase
     .from("billing_period_summary")
     .select("*")
     .eq("member_id", id)
     .order("period_start", { ascending: false });
+  if (periodsError) throw new Error(`Could not load billing periods: ${periodsError.message}`);
   const periodIds = (periods ?? []).map((p) => p.id);
 
   const [payments, jobs] = await Promise.all([
@@ -122,6 +125,9 @@ export async function getMemberDetail(supabase: Client, id: string) {
       : Promise.resolve({ data: [] as PaymentRow[] }),
     supabase.from("message_jobs").select("*").eq("member_id", id).order("created_at", { ascending: false }).limit(50),
   ]);
+
+  const detailError = ("error" in payments ? payments.error : null) ?? jobs.error;
+  if (detailError) throw new Error(`Could not load member history: ${detailError.message}`);
 
   const jobIds = (jobs.data ?? []).map((j) => j.id);
   const events = jobIds.length
@@ -150,7 +156,9 @@ export async function listJobs(supabase: Client, opts: { state?: JobState }) {
     .order("created_at", { ascending: false })
     .limit(100);
   if (opts.state) q = q.eq("state", opts.state);
-  const { data } = await q;
+  const { data, error } = await q;
+  // An unavailable list must surface as an error, never as a calm "no reminders" empty state.
+  if (error) throw new Error(`Could not load reminders: ${error.message}`);
   return (data ?? []) as unknown as (MessageJobRow & {
     members: { full_name: string } | null;
     billing_periods: { due_on: string; amount_due_paise: number } | null;

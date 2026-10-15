@@ -100,7 +100,7 @@ export async function startFakeSupabase(port = 54321) {
           const inner = m[2]!.split(",").map((c) => q(c.trim())).join(", ");
           return `(select row_to_json(e) from (select ${inner} from public.${q(emb)} where id = t.${q(fk)}) e) as ${q(emb)}`;
         }
-        return `t.${q(p)}`;
+        return p === "*" ? "t.*" : `t.${q(p)}`;
       })
       .join(", ");
   }
